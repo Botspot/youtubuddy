@@ -1,0 +1,139 @@
+#!/bin/bash
+
+DIRECTORY="$(readlink -f "$(dirname "$0")")"
+
+function error {
+  echo -e "\e[91m$1\e[39m"
+  exit 1
+}
+
+check() {
+  #youtube-dl
+  if [ ! -f /usr/bin/youtube-dl ];then
+    echo "Installing youtube-dl..."
+    sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
+    if [ ! -f /usr/bin/youtube-dl ];then
+      error "youtube-dl should be downloaded now, but /usr/bin/youtube-dl does not exist!"
+    fi
+    sudo chmod a+rx /usr/local/bin/youtube-dl
+  fi
+  
+  #YAD
+  if ! command -v yad &>/dev/null;then
+    echo "Installing YAD..."
+    sudo apt install -y yad || error "Failed to install yad!"
+  fi
+  
+  #jq
+  if ! command -v jq &>/dev/null;then
+    echo "Installing jq..."
+    sudo apt install -y jq || error "Failed to install jq!"
+  fi
+}
+check
+
+search="$1"
+
+while [ -z "$search" ];do
+  search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
+    --title="Youtubuddy: Search" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --separator='\n' \
+    --center --height=150 --width=400 \
+    --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch")" \
+    "$add" \
+    --button=!"${DIRECTORY}/icons/search.png":0)" || exit 0
+  
+  if [ -z "$search" ];then
+    echo "empty search"
+    search=''
+    add="--field=Really? Come on. You have to search for something. ;):LBL"
+  fi
+done
+
+numresults=50
+
+mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data"
+
+
+echo "$search" > "${DIRECTORY}/data/lastsearch"
+rm -f "${DIRECTORY}/data/lastjson"
+
+youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
+
+(echo "# "
+sleep infinity)| yad --progress --pulsate --title="Youtubuddy: Loading" \
+  --image="${DIRECTORY}/icons/logo-long.png" --image-on-top \
+  --text="Loading results..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
+  --width=400 --height=150 --center --auto-close --auto-kill \
+  --no-buttons 2>/dev/null &
+loader=$!
+
+while [ -z "$(cat "${DIRECTORY}/data/lastjson")" ];do
+  sleep 1
+done
+
+kill $loader
+output=''
+while [ -z "$output" ];do
+  output="$(
+  for i in $(seq $numresults); do
+    result=''
+    while [ -z "$result" ];do
+      result="$(cat "${DIRECTORY}/data/lastjson" | sed -n "${i}p")"
+    done
+    
+    result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
+    
+    id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
+    
+    title="$(echo "$result" | jq '.fulltitle' | head -n1 | tr -d '"')"
+    
+    #get the link to the thumbnail image for the video. Image size is determined by the [3] string. From 0 (smallest) to 4 (largest)
+    imageurl="$(echo "$result" | jq '.thumbnails' | jq '.[3].url' | tr -d '"')"
+    if [ ! -f "${DIRECTORY}/thumbnails/${id}.png" ];then
+      image="${DIRECTORY}/thumbnails/${id}.webm"
+      wget "$imageurl" -O "$image"
+      mogrify -format png "$image"
+      rm "$image"
+    fi
+    image="${DIRECTORY}/thumbnails/${id}.png"
+    
+    url="$(echo "$result" | jq '.webpage_url' | tr -d '"')"
+    
+    #highest video quality available. For example: "1080p60"
+    quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | tr -d '"' | head -n1)"
+    likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
+    dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
+    channel="$(echo "$result" | jq '.uploader' | sed -n '1p')"
+    
+    echo -e "FALSE
+$image
+$title
+$url
+$url $channel"
+    sleep 0.1
+  done | yad --list --checklist --text="Select some videos!" \
+    --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
+    --title="Youtubuddy: Results" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --center --width=1000 --height=500 \
+    --column=:CHK --column=:IMG --column=Info --column=ID:HD --column=tooltip:HD --print-column=4 --tooltip-column=5 --separator=' ' \
+    --button=Play!"${DIRECTORY}/icons/play.png":2 \
+    --button=Download!"${DIRECTORY}/icons/download.png":0
+    )"
+  button=$?
+  [ $button != 0 ] && [ $button != 2 ] && exit 0
+done
+playlist=()
+
+IFS=$'\n'
+for video in $output ;do
+  playlist+=( "$video" )
+done
+
+if [ $button == 2 ];then
+  #play
+  vlc ${playlist[@]} &
+elif [ $button == 0 ];then
+  #download
+  youtube-dl ${playlist[@]}
+fi
