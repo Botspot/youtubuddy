@@ -9,7 +9,7 @@ function error {
 
 check() {
   #youtube-dl
-  if [ ! -f /usr/bin/youtube-dl ];then
+  if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ];then
     echo "Installing youtube-dl..."
     sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
     if [ ! -f /usr/bin/youtube-dl ];then
@@ -29,14 +29,31 @@ check() {
     echo "Installing jq..."
     sudo apt install -y jq || error "Failed to install jq!"
   fi
+  
+  mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data"
 }
-check
+if [ ! -e "${DIRECTORY}/data" ];then
+  check
+fi
+
+if [ ! -f "${DIRECTORY}/no-update" ];then
+  localhash="$(git rev-parse HEAD)"
+  latesthash="$(git ls-remote https://github.com/Botspot/youtubuddy HEAD | awk '{print $1}')"
+  if [ "$localhash" != "$latesthash" ] && [ ! -z "$latesthash" ] && [ ! -z "$localhash" ];then
+    echo "YouTubuddy is out of date. Downloading new version..."
+    gio trash "$DIRECTORY"
+    git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
+  fi
+fi
+
+#remove old thumbnails
+find "${DIRECTORY}/thumbnails"/* -mtime +1 -exec rm {} \; &
 
 search="$1"
 
 while [ -z "$search" ];do
   search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
-    --title="Youtubuddy: Search" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo-64.png" \
     --separator='\n' \
     --center --height=150 --width=400 \
     --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch")" \
@@ -52,16 +69,13 @@ done
 
 numresults=50
 
-mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data"
-
-
 echo "$search" > "${DIRECTORY}/data/lastsearch"
 rm -f "${DIRECTORY}/data/lastjson"
 
 youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
 
 (echo "# "
-sleep infinity)| yad --progress --pulsate --title="Youtubuddy: Loading" \
+sleep infinity)| yad --progress --pulsate --title="YouTubuddy: Loading" \
   --image="${DIRECTORY}/icons/logo-long.png" --image-on-top \
   --text="Loading results..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
   --width=400 --height=150 --center --auto-close --auto-kill \
@@ -114,7 +128,7 @@ $url $channel"
     sleep 0.1
   done | yad --list --checklist --text="Select some videos!" \
     --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
-    --title="Youtubuddy: Results" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --title="YouTubuddy: Results" --window-icon="${DIRECTORY}/icons/logo-64.png" \
     --center --width=1000 --height=500 \
     --column=:CHK --column=:IMG --column=Info --column=ID:HD --column=tooltip:HD --print-column=4 --tooltip-column=5 --separator=' ' \
     --button=Play!"${DIRECTORY}/icons/play.png":2 \
