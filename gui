@@ -11,11 +11,11 @@ check() {
   #youtube-dl
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ];then
     echo "Installing youtube-dl..."
-    sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
+    sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl || error "Failed to download youtube-dl!"
+    sudo chmod a+rx /usr/local/bin/youtube-dl
     if [ ! -f /usr/local/bin/youtube-dl ];then
       error "youtube-dl should be downloaded now, but /usr/local/bin/youtube-dl does not exist!"
     fi
-    sudo chmod a+rx /usr/local/bin/youtube-dl
   fi
   
   #YAD
@@ -30,9 +30,28 @@ check() {
     sudo apt install -y jq || error "Failed to install jq!"
   fi
   
-  mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data"
+  if ! command -v mogrify &>/dev/null;then
+    echo "Installing imagemagick..."
+    sudo apt install -y imagemagick || error "Failed to install imagemagick!"
+  fi
+  sudo rm /usr/share/applications/display-im6.q16.desktop
+  
+  mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data" ~/.local/share/applications
+  
+  echo "[Desktop Entry]
+Version=1.0
+Name=YouTubuddy
+GenericName=YouTube Browser
+Comment=Search/Watch/Download YouTube videos without a browser
+Exec=$0
+Terminal=false
+X-MultipleArgs=false
+Type=Application
+Icon=${DIRECTORY}/icons/logo.png
+Categories=Network;WebBrowser;
+StartupNotify=true" > ~/.local/share/applications/youtubuddy.desktop
 }
-if [ ! -e "${DIRECTORY}/data" ];then
+if [ ! -e "${DIRECTORY}/data" ] || [ ~/.local/share/applications/youtubuddy.desktop ];then
   check
 fi
 
@@ -44,6 +63,8 @@ if [ ! -f "${DIRECTORY}/no-update" ];then
     echo "YouTubuddy is out of date. Downloading new version..."
     gio trash "$DIRECTORY"
     git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
+    bash -c "$0" &
+    exit 0
   fi
   cd $HOME
 fi
@@ -77,9 +98,11 @@ rm -f "${DIRECTORY}/data/lastjson"
 youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
 
 (echo "# "
-sleep infinity)| yad --progress --pulsate --title="YouTubuddy: Loading" \
+sleep 15
+echo "# This should not be taking so long."
+sleep infinity) | yad --progress --pulsate --title="YouTubuddy: Searching" \
   --image="${DIRECTORY}/icons/logo-long.png" --image-on-top \
-  --text="Loading results..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
+  --text="Searching..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
   --width=400 --height=150 --center --auto-close --auto-kill \
   --no-buttons 2>/dev/null &
 loader=$!
@@ -95,7 +118,7 @@ while [ -z "$output" ];do
   for i in $(seq $numresults); do
     result=''
     while [ -z "$result" ];do
-      result="$(cat "${DIRECTORY}/data/lastjson" | sed -n "${i}p")"
+      result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
     done
     
     result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
@@ -103,6 +126,8 @@ while [ -z "$output" ];do
     id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
     
     title="$(echo "$result" | jq '.fulltitle' | head -n1 | tr -d '"')"
+    
+    date="$(echo "$result" | jq '.upload_date' | head -n1 | tr -d '"' | date -d $(cat /dev/stdin) +%Y/%m/%d)"
     
     #get the link to the thumbnail image for the video. Image size is determined by the [3] string. From 0 (smallest) to 4 (largest)
     imageurl="$(echo "$result" | jq '.thumbnails' | jq '.[3].url' | tr -d '"')"
@@ -117,20 +142,20 @@ while [ -z "$output" ];do
     url="$(echo "$result" | jq '.webpage_url' | tr -d '"')"
     
     #highest video quality available. For example: "1080p60"
-    quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | tr -d '"' | head -n1)"
+    quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | head -n1 | tr -d '"')"
     likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
     dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
-    channel="$(echo "$result" | jq '.uploader' | sed -n '1p')"
+    channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"')"
     
     echo -e "FALSE
 $image
 $title
 $url
-$url $channel"
+$url - $channel on $date"
     sleep 0.1
   done | yad --list --checklist --text="Select some videos!" \
     --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
-    --title="YouTubuddy: Results" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --title="YouTubuddy: Results for "\""$search"\""" --window-icon="${DIRECTORY}/icons/logo-64.png" \
     --center --width=1000 --height=500 \
     --column=:CHK --column=:IMG --column=Info --column=ID:HD --column=tooltip:HD --print-column=4 --tooltip-column=5 --separator=' ' \
     --button=Play!"${DIRECTORY}/icons/play.png":2 \
@@ -151,5 +176,5 @@ if [ $button == 2 ];then
   vlc ${playlist[@]} &
 elif [ $button == 0 ];then
   #download
-  youtube-dl ${playlist[@]}
+  "${DIRECTORY}/terminal-run" "youtube-dl ${playlist[@]}" "Downloading $(echo "${playlist[@]}" | tr ' ' '\n' | wc -l) videos to ${HOME}..."
 fi
