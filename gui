@@ -34,7 +34,7 @@ check() {
     echo "Installing imagemagick..."
     sudo apt install -y imagemagick || error "Failed to install imagemagick!"
   fi
-  sudo rm /usr/share/applications/display-im6.q16.desktop
+  sudo rm /usr/share/applications/display-im6.q16.desktop &>/dev/null
   
   mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data" ~/.local/share/applications
   
@@ -45,24 +45,29 @@ GenericName=YouTube Browser
 Comment=Search/Watch/Download YouTube videos without a browser
 Exec=$0
 Terminal=false
-X-MultipleArgs=false
 Type=Application
 Icon=${DIRECTORY}/icons/logo.png
 Categories=Network;WebBrowser;
 StartupNotify=true" > ~/.local/share/applications/youtubuddy.desktop
 }
-if [ ! -e "${DIRECTORY}/data" ] || [ ~/.local/share/applications/youtubuddy.desktop ];then
+if [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
   check
+else
+  check &
 fi
 
+#check for updates and auto-update if the no-update files does not exist
 if [ ! -f "${DIRECTORY}/no-update" ];then
   cd "$DIRECTORY"
   localhash="$(git rev-parse HEAD)"
   latesthash="$(git ls-remote https://github.com/Botspot/youtubuddy HEAD | awk '{print $1}')"
   if [ "$localhash" != "$latesthash" ] && [ ! -z "$latesthash" ] && [ ! -z "$localhash" ];then
     echo "YouTubuddy is out of date. Downloading new version..."
-    gio trash "$DIRECTORY"
+    rm -rf "$DIRECTORY.old" &>/dev/null
+    mv -f "$DIRECTORY" "$DIRECTORY.old"
     git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
+    cp -af "$DIRECTORY.old/data"/. "$DIRECTORY/data"
+    gio trash "$DIRECTORY.old"
     bash -c "$0" &
     exit 0
   fi
@@ -72,109 +77,205 @@ fi
 #remove old thumbnails
 find "${DIRECTORY}/thumbnails"/* -mtime +1 -exec rm {} \; &>/dev/null &
 
+#you can run this script with a search argument to search for.
 search="$1"
 
-while [ -z "$search" ];do
-  search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
-    --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo-64.png" \
-    --separator='\n' \
-    --center --height=150 --width=400 \
-    --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch")" \
-    "$add" \
-    --button=!"${DIRECTORY}/icons/search.png":0)" || exit 0
-  
-  if [ -z "$search" ];then
-    echo "empty search"
-    search=''
-    add="--field=Really? Come on. You have to search for something. ;):LBL"
-  fi
-done
-
-numresults=50
-
-echo "$search" > "${DIRECTORY}/data/lastsearch"
-rm -f "${DIRECTORY}/data/lastjson"
-
-youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
-
-(echo "# "
-sleep 15
-echo "# This should not be taking so long."
-sleep infinity) | yad --progress --pulsate --title="YouTubuddy: Searching" \
-  --image="${DIRECTORY}/icons/logo-long.png" --image-on-top \
-  --text="Searching..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
-  --width=400 --height=150 --center --auto-close --auto-kill \
-  --no-buttons 2>/dev/null &
-loader=$!
-
-while [ -z "$(cat "${DIRECTORY}/data/lastjson")" ];do
-  sleep 1
-done
-
-kill $loader
-output=''
-while [ -z "$output" ];do
-  output="$(
-  for i in $(seq $numresults); do
-    result=''
-    while [ -z "$result" ];do
-      result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
-    done
-    
-    result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
-    
-    id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
-    
-    title="$(echo "$result" | jq '.fulltitle' | head -n1 | tr -d '"')"
-    
-    date="$(echo "$result" | jq '.upload_date' | head -n1 | tr -d '"' | date -d $(cat /dev/stdin) +%Y/%m/%d)"
-    
-    #get the link to the thumbnail image for the video. Image size is determined by the [3] string. From 0 (smallest) to 4 (largest)
-    imageurl="$(echo "$result" | jq '.thumbnails' | jq '.[3].url' | tr -d '"')"
-    if [ ! -f "${DIRECTORY}/thumbnails/${id}.png" ];then
-      image="${DIRECTORY}/thumbnails/${id}.webm"
-      wget "$imageurl" -O "$image"
-      mogrify -format png "$image"
-      rm "$image"
+#main while loop. If search results window is closed, this takes you back to the start.
+while true;do
+  #searching while loop. It stays here until a search is made.
+  while [ -z "$search" ];do
+    search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
+      --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+      --separator='\n' \
+      --center --height=150 --width=400 \
+      --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch")" \
+      "$add" \
+      --button=Options!"${DIRECTORY}/icons/tool.png":2 \
+      --button=!"${DIRECTORY}/icons/search.png":0)"
+    button=$?
+    if [ $button == 0 ];then
+      #search
+      if [ -z "$search" ];then
+        echo "empty search"
+        search=''
+        add="--field=Really? Come on. You have to search for something. ;):LBL"
+      fi
+    elif [ $button == 2 ];then
+      search=''
+      #options
+      
+      options="${DIRECTORY}/data/options/thumbnail-size
+${DIRECTORY}/data/options/multi-select
+${DIRECTORY}/data/options/ytdl-args
+${DIRECTORY}/data/options/vlc-cmd
+${DIRECTORY}/data/options/vlc-args"
+      
+      output="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
+        --title="YouTubuddy: Options" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+        --separator='\n' --text="Options" \
+        --center --height=150 --width=400 \
+        --field='Thumbnail size:':NUM "$(cat "$(echo "$options" | sed -n 1p)")"!0..5 \
+        --field='Allow multiple videos to be selected':CHK "$(cat "$(echo "$options" | sed -n 2p)")" \
+        --field='Youtube-dl args:' "$(cat "$(echo "$options" | sed -n 3p)")" \
+        --field='VLC command:' "$(cat "$(echo "$options" | sed -n 4p)")" \
+        --field='VLC args:' "$(cat "$(echo "$options" | sed -n 5p)")" \
+        --button=Done!"${DIRECTORY}/icons/check.png":0)"
+      button=$?
+      if [ $button == 0 ];then
+        #save settings if check-mark clicked
+        
+        #remove empty lines from output
+        #output="$(echo "$output" | grep .)"
+        
+        echo "output: ${output}EOO"
+        
+        for i in $(seq $(echo "$options" | wc -l)) ;do
+          echo "$output" | sed -n ${i}p > "$(echo "$options" | sed -n ${i}p)"
+        done
+        
+        #remove all thumbnails if thumbnail size changed
+        if [ "$(cat "$(echo "$options" | sed -n 1p)")" != "$(echo "$output" | sed -n ${i}p)" ];then
+          echo "Thumbnail size changed. Deleting all thumbnails..."
+          rm -rf "${DIRECTORY}/thumbnails"/*
+        fi
+        
+      fi
+    else
+      error "user exited"
     fi
-    image="${DIRECTORY}/thumbnails/${id}.png"
-    
-    url="$(echo "$result" | jq '.webpage_url' | tr -d '"')"
-    
-    #highest video quality available. For example: "1080p60"
-    quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | head -n1 | tr -d '"')"
-    likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
-    dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
-    channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"')"
-    
-    echo -e "FALSE
-$image
-$title
+  done
+  #end of searching while loop
+  
+  numresults=50
+  
+  echo "$search" > "${DIRECTORY}/data/lastsearch"
+  rm -f "${DIRECTORY}/data/lastjson"
+  
+  #this searches for videos as a background process
+  youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
+  ytdlpid=$!
+  
+  #display loading dialog
+  (echo "# "
+  sleep 15
+  echo "# This should not be taking so long."
+  sleep infinity) | yad --progress --pulsate --title="YouTubuddy: Searching" \
+    --image="${DIRECTORY}/icons/logo-long.png" --image-on-top \
+    --text="Searching..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --width=400 --height=150 --center --auto-close --auto-kill \
+    --no-buttons 2>/dev/null &
+  loader=$!
+  
+  #waits until the first result is inserted in the file
+  while [ -z "$(cat "${DIRECTORY}/data/lastjson")" ];do
+    sleep 1
+  done
+  
+  kill $loader
+  
+  #determine the thumbnail size
+  thumbsize="$(cat ${DIRECTORY}/data/options/thumbnail-size)"
+  if [ -z "$thumbsize" ];then
+    thumbsize=3
+  elif [ "$thumbsize" == 0 ];then
+    thumbsize=''
+  else
+    thumbsize=$((thumbsize-1))
+  fi
+  #determine if multi-select is enabled
+  multiselect="$(cat "${DIRECTORY}/data/options/multi-select")"
+  
+  #search results while loop. Returns you to the search results after you click a play/download button
+  while true;do
+    output="$(
+    for i in $(seq $numresults); do
+      result=''
+      while [ -z "$result" ];do
+        result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
+      done
+      
+      result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
+      
+      id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
+      
+      title="$(echo "$result" | jq '.fulltitle' | head -n1 | tr -d '"' | sed 's/&/&amp;/g')"
+      
+      date="$(echo "$result" | jq '.upload_date' | head -n1 | tr -d '"' | date -d $(cat /dev/stdin) +%Y/%m/%d)"
+      
+      #get the link to the thumbnail image for the video. Image size is determined by the [3] string. From 0 (smallest) to 4 (largest)
+      if [ ! -z $thumbsize ];then
+        imageurl="$(echo "$result" | jq '.thumbnails' | jq ".[$thumbsize].url" | tr -d '"')"
+        if [ ! -f "${DIRECTORY}/thumbnails/${id}.png" ];then
+          image="${DIRECTORY}/thumbnails/${id}.webm"
+          wget "$imageurl" -O "$image"
+          mogrify -format png "$image"
+          rm "$image"
+        fi
+        image="${DIRECTORY}/thumbnails/${id}.png"
+        image="$(echo "$image" | sed 's/&/&amp;/g')"
+      fi
+      
+      url="$(echo "$result" | jq '.webpage_url' | tr -d '"')"
+      urlnice="$(echo "youtu.be/${id}" | sed 's/&/&amp;/g')"
+      
+      #highest video quality available. For example: "1080p60"
+      quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | head -n1 | tr -d '"')"
+      likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
+      dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
+      channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"')"
+      
+      echo -e "FALSE
 $url
-$url - $channel on $date"
-    sleep 0.1
-  done | yad --list --checklist --text="Select some videos!" \
-    --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
-    --title="YouTubuddy: Results for "\""$search"\""" --window-icon="${DIRECTORY}/icons/logo-64.png" \
-    --center --width=1000 --height=500 \
-    --column=:CHK --column=:IMG --column=Info --column=ID:HD --column=tooltip:HD --print-column=4 --tooltip-column=5 --separator=' ' \
-    --button=Play!"${DIRECTORY}/icons/play.png":2 \
-    --button=Download!"${DIRECTORY}/icons/download.png":0
-    )"
-  button=$?
-  [ $button != 0 ] && [ $button != 2 ] && exit 0
+$urlnice - $channel on $date
+$image
+$title"
+      
+      sleep 0.1
+    done | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
+      --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
+      --title="YouTubuddy: Results for "\""$search"\""" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+      --center --width=1000 --height=500 \
+      $([ "$multiselect" == TRUE ] && echo '--column=:CHK' || echo '--column=:HD') --column=url:HD --column=tooltip:HD $([ ! -z "$thumbsize" ] && echo '--column=:IMG' || echo '--column=:HD') --column=title --print-column=2 --tooltip-column=3 --separator=' ' \
+      --button=Play!"${DIRECTORY}/icons/play.png":2 \
+      --button=Download!"${DIRECTORY}/icons/download.png":0
+      )"
+    button=$?
+    
+    #go back to the starting page if play/download is not clicked
+    if [ $button != 0 ] && [ $button != 2 ];then
+      search=''
+      kill $ytdlpid
+      break #exit the search results while loop
+    fi
+    
+    #if at least 1 video selected 
+    if [ ! -z "$output" ];then
+      playlist=()
+      
+      PREIFS="$IFS"
+      IFS=$'\n'
+      for video in $output ;do
+        playlist+=( "$video" )
+      done
+      IFS="$PREIFS"
+      
+      if [ $button == 2 ];then
+        #play
+        $(cat "${DIRECTORY}/data/options/vlc-cmd") ${playlist[@]} $(cat "${DIRECTORY}/data/options/vlc-args") &
+      elif [ $button == 0 ];then
+        #download
+        numvideos=$(echo "$output" | tr ' ' '\n' | grep . | wc -l)
+        if [ $numvideos == 1 ];then
+          plural='video'
+        else
+          plural='videos'
+        fi
+        "${DIRECTORY}/terminal-run" "youtube-dl ${playlist[*]} $(cat "${DIRECTORY}/data/options/ytdl-args") ; echo 'closing in 10 seconds...' ; sleep 10" "Downloading $numvideos $plural to ${HOME}..." &
+      fi
+    fi
+    
+    
+  done
+  #end of search results while loop
 done
-playlist=()
-
-IFS=$'\n'
-for video in $output ;do
-  playlist+=( "$video" )
-done
-
-if [ $button == 2 ];then
-  #play
-  vlc ${playlist[@]} &
-elif [ $button == 0 ];then
-  #download
-  "${DIRECTORY}/terminal-run" "youtube-dl ${playlist[@]}" "Downloading $(echo "${playlist[@]}" | tr ' ' '\n' | wc -l) videos to ${HOME}..."
-fi
+#end of main while loop
