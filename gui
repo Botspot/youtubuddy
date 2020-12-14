@@ -37,6 +37,7 @@ if [ ! -e "${DIRECTORY}/data" ];then
 fi
 
 if [ ! -f "${DIRECTORY}/no-update" ];then
+  cd "$DIRECTORY"
   localhash="$(git rev-parse HEAD)"
   latesthash="$(git ls-remote https://github.com/Botspot/youtubuddy HEAD | awk '{print $1}')"
   if [ "$localhash" != "$latesthash" ] && [ ! -z "$latesthash" ] && [ ! -z "$localhash" ];then
@@ -44,10 +45,11 @@ if [ ! -f "${DIRECTORY}/no-update" ];then
     gio trash "$DIRECTORY"
     git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
   fi
+  cd $HOME
 fi
 
 #remove old thumbnails
-find "${DIRECTORY}/thumbnails"/* -mtime +1 -exec rm {} \; &
+find "${DIRECTORY}/thumbnails"/* -mtime +1 -exec rm {} \; &>/dev/null &
 
 search="$1"
 
