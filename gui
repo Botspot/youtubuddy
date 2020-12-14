@@ -12,8 +12,8 @@ check() {
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ];then
     echo "Installing youtube-dl..."
     sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
-    if [ ! -f /usr/bin/youtube-dl ];then
-      error "youtube-dl should be downloaded now, but /usr/bin/youtube-dl does not exist!"
+    if [ ! -f /usr/local/bin/youtube-dl ];then
+      error "youtube-dl should be downloaded now, but /usr/local/bin/youtube-dl does not exist!"
     fi
     sudo chmod a+rx /usr/local/bin/youtube-dl
   fi
