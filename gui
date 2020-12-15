@@ -116,25 +116,26 @@ ${DIRECTORY}/data/options/vlc-args"
         --center --height=150 --width=400 \
         --field='Thumbnail size:':NUM "$(cat "$(echo "$options" | sed -n 1p)")"!0..5 \
         --field='Allow multiple videos to be selected':CHK "$(cat "$(echo "$options" | sed -n 2p)")" \
-        --field='Youtube-dl args:' "$(cat "$(echo "$options" | sed -n 3p)")" \
-        --field='VLC command:' "$(cat "$(echo "$options" | sed -n 4p)")" \
-        --field='VLC args:' "$(cat "$(echo "$options" | sed -n 5p)")" \
+        --field='Youtube-dl args:' "​$(cat "$(echo "$options" | sed -n 3p)")" \
+        --field='VLC command:' "​$(cat "$(echo "$options" | sed -n 4p)")" \
+        --field='VLC args:' "​$(cat "$(echo "$options" | sed -n 5p)")" \
         --button=Done!"${DIRECTORY}/icons/check.png":0)"
       button=$?
       if [ $button == 0 ];then
         #save settings if check-mark clicked
         
-        #remove empty lines from output
-        #output="$(echo "$output" | grep .)"
+        #remove zero-width spaces from output
+        output="$(echo "$output" | sed 's/​//g')"
         
         echo "output: ${output}EOO"
         
         for i in $(seq $(echo "$options" | wc -l)) ;do
           echo "$output" | sed -n ${i}p > "$(echo "$options" | sed -n ${i}p)"
+          echo "Setting $(echo "$options" | sed -n ${i}p) to $(echo "$output" | sed -n ${i}p)"
         done
         
         #remove all thumbnails if thumbnail size changed
-        if [ "$(cat "$(echo "$options" | sed -n 1p)")" != "$(echo "$output" | sed -n ${i}p)" ];then
+        if [ "$(cat "$(echo "$options" | sed -n 1p)")" != "$(echo "$output" | sed -n 1p)" ];then
           echo "Thumbnail size changed. Deleting all thumbnails..."
           rm -rf "${DIRECTORY}/thumbnails"/*
         fi
