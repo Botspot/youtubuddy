@@ -88,7 +88,7 @@ while true;do
       --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
       --center --height=150 --width=400 \
-      --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch")" \
+      --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch" 2>/dev/null)" \
       "$add" \
       --button=Options!"${DIRECTORY}/icons/tool.png":2 \
       --button=!"${DIRECTORY}/icons/search.png":0)"
@@ -106,7 +106,9 @@ while true;do
       
       options="${DIRECTORY}/data/options/thumbnail-size
 ${DIRECTORY}/data/options/multi-select
+${DIRECTORY}/data/options/num-results
 ${DIRECTORY}/data/options/ytdl-args
+${DIRECTORY}/data/options/dl-location
 ${DIRECTORY}/data/options/vlc-cmd
 ${DIRECTORY}/data/options/vlc-args"
       
@@ -116,9 +118,11 @@ ${DIRECTORY}/data/options/vlc-args"
         --center --height=150 --width=400 \
         --field='Thumbnail size:':NUM "$(cat "$(echo "$options" | sed -n 1p)")"!0..5 \
         --field='Allow multiple videos to be selected':CHK "$(cat "$(echo "$options" | sed -n 2p)")" \
-        --field='Youtube-dl args:' "​$(cat "$(echo "$options" | sed -n 3p)")" \
-        --field='VLC command:' "​$(cat "$(echo "$options" | sed -n 4p)")" \
-        --field='VLC args:' "​$(cat "$(echo "$options" | sed -n 5p)")" \
+        --field='# of results:':NUM "$(cat "$(echo "$options" | sed -n 3p)")"!10..1000!10 \
+        --field='Youtube-dl args:la' "​$(cat "$(echo "$options" | sed -n 4p)")" \
+        --field='Videos saved to:':DIR "$(cat "$(echo "$options" | sed -n 5p)")" \
+        --field='VLC command:' "​$(cat "$(echo "$options" | sed -n 6p)")" \
+        --field='VLC args:' "​$(cat "$(echo "$options" | sed -n 7p)")" \
         --button=Done!"${DIRECTORY}/icons/check.png":0)"
       button=$?
       if [ $button == 0 ];then
@@ -167,7 +171,7 @@ ${DIRECTORY}/data/options/vlc-args"
     ytdlpid=$!
   else
     #search mode
-    numresults=50
+    numresults=$(cat "${DIRECTORY}/data/options/num-results")
     loadtext="Searching for videos..."
     windowtitle="YouTubuddy: Results for "\""$search"\"""
     #this searches for videos as a background process
@@ -211,56 +215,56 @@ ${DIRECTORY}/data/options/vlc-args"
   multiselect="$(cat "${DIRECTORY}/data/options/multi-select")"
   
   #search results while loop. Returns you to the search results after you click a play/download button
-  i=0
   while true;do
+    i=0
     output="$(
-    while ps -p $ytdlpid > /dev/null; do
+    while true;do
       i=$((i+1))
-      result=''
-      while [ -z "$result" ];do
-        result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
-      done
-      
-      result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
-      
-      id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
-      
-      title="$(echo "$result" | jq '.fulltitle' | head -n1 | tr -d '"' | sed 's/&/&amp;/g')"
-      
-      date="$(echo "$result" | jq '.upload_date' | head -n1 | tr -d '"' | date -d $(cat /dev/stdin) +%Y/%m/%d)"
-      
-      #get the link to the thumbnail image for the video. Image size is determined by the [3] string. From 0 (smallest) to 4 (largest)
-      if [ ! -z $thumbsize ];then
-        imageurl="$(echo "$result" | jq '.thumbnails' | jq ".[$thumbsize].url" | tr -d '"')"
-        if [ ! -f "${DIRECTORY}/thumbnails/${id}.png" ];then
-          image="${DIRECTORY}/thumbnails/${id}.webm"
-          wget "$imageurl" -O "$image"
-          mogrify -format png "$image"
-          rm "$image"
+      if ps -p $ytdlpid > /dev/null || [ $i -le "$(wc -l "${DIRECTORY}/data/lastjson" | awk '{print $1}')" ]; then
+        result=''
+        while [ -z "$result" ];do
+          result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
+        done
+        
+        result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
+        
+        id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
+        
+        title="$(echo "$result" | jq '.fulltitle' | head -n1 | tr -d '"' | sed 's/&/&amp;/g')"
+        
+        date="$(echo "$result" | jq '.upload_date' | head -n1 | tr -d '"' | date -d $(cat /dev/stdin) +%Y/%m/%d)"
+        
+        #get the link to the thumbnail image for the video. Image size is determined by the [3] string. From 0 (smallest) to 4 (largest)
+        if [ ! -z $thumbsize ];then
+          imageurl="$(echo "$result" | jq '.thumbnails' | jq ".[$thumbsize].url" | tr -d '"')"
+          if [ ! -f "${DIRECTORY}/thumbnails/${id}.png" ];then
+            image="${DIRECTORY}/thumbnails/${id}.webm"
+            wget "$imageurl" -O "$image"
+            mogrify -format png "$image"
+            rm "$image"
+          fi
+          image="${DIRECTORY}/thumbnails/${id}.png"
+          image="$(echo "$image" | sed 's/&/&amp;/g')"
         fi
-        image="${DIRECTORY}/thumbnails/${id}.png"
-        image="$(echo "$image" | sed 's/&/&amp;/g')"
-      fi
-      
-      url="$(echo "$result" | jq '.webpage_url' | tr -d '"')"
-      urlnice="$(echo "youtu.be/${id}" | sed 's/&/&amp;/g')"
-      
-      #highest video quality available. For example: "1080p60"
-      quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | head -n1 | tr -d '"')"
-      likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
-      dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
-      channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"')"
-      
-      echo -e "FALSE
+        
+        url="$(echo "$result" | jq '.webpage_url' | tr -d '"')"
+        urlnice="$(echo "youtu.be/${id}" | sed 's/&/&amp;/g')"
+        
+        #highest video quality available. For example: "1080p60"
+        quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | head -n1 | tr -d '"')"
+        likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
+        dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
+        channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"')"
+        
+        echo -e "FALSE
 $url
 $urlnice - $channel on $date
 $image
 $title"
-      
-      sleep 0.5
-      
-      #if all results are in, stop the file-checking loop.
-      if ! ps -p $ytdlpid > /dev/null;then
+        
+        sleep 0.5
+      else
+        #if all results are in, stop the file-checking loop.
         echo "FALSE
 
 
@@ -268,7 +272,6 @@ ${DIRECTORY}/icons/blank.png
 End of results."
         exit 0
       fi
-      
     done | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
       --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
       --title="$windowtitle" --window-icon="${DIRECTORY}/icons/logo.png" \
@@ -308,7 +311,9 @@ End of results."
         else
           plural='videos'
         fi
-        "${DIRECTORY}/terminal-run" "youtube-dl ${playlist[*]} $(cat "${DIRECTORY}/data/options/ytdl-args") ; echo 'closing in 10 seconds...' ; sleep 10" "Downloading $numvideos $plural to ${HOME}..." &
+        "${DIRECTORY}/terminal-run" "trap 'echo "\""closing in 10 seconds..."\"" ; sleep 10' EXIT
+          cd $(cat "${DIRECTORY}/data/options/dl-location")
+          youtube-dl ${playlist[*]} $(cat "${DIRECTORY}/data/options/ytdl-args")" "Downloading $numvideos $plural to $(cat "${DIRECTORY}/data/options/dl-location")..." &
       fi
     fi
     
