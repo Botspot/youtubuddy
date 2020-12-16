@@ -129,16 +129,16 @@ ${DIRECTORY}/data/options/vlc-args"
         
         echo "output: ${output}EOO"
         
-        for i in $(seq $(echo "$options" | wc -l)) ;do
-          echo "$output" | sed -n ${i}p > "$(echo "$options" | sed -n ${i}p)"
-          echo "Setting $(echo "$options" | sed -n ${i}p) to $(echo "$output" | sed -n ${i}p)"
-        done
-        
         #remove all thumbnails if thumbnail size changed
         if [ "$(cat "$(echo "$options" | sed -n 1p)")" != "$(echo "$output" | sed -n 1p)" ];then
           echo "Thumbnail size changed. Deleting all thumbnails..."
           rm -rf "${DIRECTORY}/thumbnails"/*
         fi
+        #save changes
+        for i in $(seq $(echo "$options" | wc -l)) ;do
+          echo "$output" | sed -n ${i}p > "$(echo "$options" | sed -n ${i}p)"
+          echo "Setting $(echo "$options" | sed -n ${i}p) to $(echo "$output" | sed -n ${i}p)"
+        done
         
       fi
     #end of settings code
@@ -153,7 +153,6 @@ ${DIRECTORY}/data/options/vlc-args"
   
   if [[ "$search" == *'youtube.com/watch?v='* ]] || [[ "$search" == *youtu.be/* ]];then
     #url single-video mode
-    numresults=1
     loadtext="Finding your URL..."
     windowtitle="YouTubuddy: Video URL"
     #this searches for videos as a background process
@@ -161,7 +160,6 @@ ${DIRECTORY}/data/options/vlc-args"
     ytdlpid=$!
   elif [[ "$search" == *'youtube.com/playlist?list='* ]] || [[ "$search" == *youtu.be/* ]];then
     #playlist-url mode
-    numresults='50'
     loadtext="Finding your playlist..."
     windowtitle="YouTubuddy: Playlist"
     #this searches for videos as a background process
