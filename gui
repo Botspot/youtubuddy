@@ -85,7 +85,7 @@ while true;do
   #searching while loop. It stays here until a search is made.
   while [ -z "$search" ];do
     search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
-      --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+      --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
       --center --height=150 --width=400 \
       --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch")" \
@@ -110,8 +110,8 @@ ${DIRECTORY}/data/options/ytdl-args
 ${DIRECTORY}/data/options/vlc-cmd
 ${DIRECTORY}/data/options/vlc-args"
       
-      output="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
-        --title="YouTubuddy: Options" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+      output="$(yad --image="${DIRECTORY}/icons/logo-short.png" --form --image-on-top \
+        --title="YouTubuddy: Options" --window-icon="${DIRECTORY}/icons/logo.png" \
         --separator='\n' --text="Options" \
         --center --height=150 --width=400 \
         --field='Thumbnail size:':NUM "$(cat "$(echo "$options" | sed -n 1p)")"!0..5 \
@@ -141,28 +141,54 @@ ${DIRECTORY}/data/options/vlc-args"
         fi
         
       fi
+    #end of settings code
     else
       error "user exited"
     fi
   done
   #end of searching while loop
   
-  numresults=50
-  
   echo "$search" > "${DIRECTORY}/data/lastsearch"
   rm -f "${DIRECTORY}/data/lastjson"
   
-  #this searches for videos as a background process
-  youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
-  ytdlpid=$!
+  if [[ "$search" == *'youtube.com/watch?v='* ]] || [[ "$search" == *youtu.be/* ]];then
+    #url single-video mode
+    numresults=1
+    loadtext="Finding your URL..."
+    windowtitle="YouTubuddy: Video URL"
+    #this searches for videos as a background process
+    youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
+    ytdlpid=$!
+  elif [[ "$search" == *'youtube.com/playlist?list='* ]] || [[ "$search" == *youtu.be/* ]];then
+    #playlist-url mode
+    numresults='50'
+    loadtext="Finding your playlist..."
+    windowtitle="YouTubuddy: Playlist"
+    #this searches for videos as a background process
+    youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
+    ytdlpid=$!
+  else
+    #search mode
+    numresults=50
+    loadtext="Searching for videos..."
+    windowtitle="YouTubuddy: Results for "\""$search"\"""
+    #this searches for videos as a background process
+    youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
+    ytdlpid=$!
+  fi
+  
+  #kill youtube-dl background process on exit
+  trap "kill $ytdlpid" EXIT
   
   #display loading dialog
   (echo "# "
-  sleep 15
+  sleep 20
   echo "# This should not be taking so long."
+  sleep 20
+  echo "# Something is wrong."
   sleep infinity) | yad --progress --pulsate --title="YouTubuddy: Searching" \
-    --image="${DIRECTORY}/icons/logo-long.png" --image-on-top \
-    --text="Searching..." --window-icon="${DIRECTORY}/icons/logo-64.png" \
+    --image="${DIRECTORY}/icons/logo-short.png" --image-on-top \
+    --text="$loadtext" --window-icon="${DIRECTORY}/icons/logo.png" \
     --width=400 --height=150 --center --auto-close --auto-kill \
     --no-buttons 2>/dev/null &
   loader=$!
@@ -187,9 +213,11 @@ ${DIRECTORY}/data/options/vlc-args"
   multiselect="$(cat "${DIRECTORY}/data/options/multi-select")"
   
   #search results while loop. Returns you to the search results after you click a play/download button
+  i=0
   while true;do
     output="$(
-    for i in $(seq $numresults); do
+    while ps -p $ytdlpid > /dev/null; do
+      i=$((i+1))
       result=''
       while [ -z "$result" ];do
         result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
@@ -231,10 +259,21 @@ $urlnice - $channel on $date
 $image
 $title"
       
-      sleep 0.1
+      sleep 0.5
+      
+      #if all results are in, stop the file-checking loop.
+      if ! ps -p $ytdlpid > /dev/null;then
+        echo "FALSE
+
+
+${DIRECTORY}/icons/blank.png
+End of results."
+        exit 0
+      fi
+      
     done | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
       --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
-      --title="YouTubuddy: Results for "\""$search"\""" --window-icon="${DIRECTORY}/icons/logo-64.png" \
+      --title="$windowtitle" --window-icon="${DIRECTORY}/icons/logo.png" \
       --center --width=1000 --height=500 \
       $([ "$multiselect" == TRUE ] && echo '--column=:CHK' || echo '--column=:HD') --column=url:HD --column=tooltip:HD $([ ! -z "$thumbsize" ] && echo '--column=:IMG' || echo '--column=:HD') --column=title --print-column=2 --tooltip-column=3 --separator=' ' \
       --button=Play!"${DIRECTORY}/icons/play.png":2 \
