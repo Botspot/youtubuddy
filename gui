@@ -254,7 +254,7 @@ ${DIRECTORY}/data/options/vlc-args"
         quality="$(echo "$result" | jq '.height' | head -n1)p$(echo "$result" | jq '.fps' | head -n1 | tr -d '"')"
         likes="$(echo "$result" | jq '.like_count' | sed -n '1p')"
         dislikes="$(echo "$result" | jq '.dislike_count' | sed -n '1p')"
-        channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"')"
+        channel="$(echo "$result" | jq '.uploader' | sed -n '1p' | tr -d '"' | sed 's/&/&amp;/g')"
         
         echo -e "FALSE
 $url
@@ -272,18 +272,19 @@ ${DIRECTORY}/icons/blank.png
 End of results."
         exit 0
       fi
-    done | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
+    done | tee /dev/stderr | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
       --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
       --title="$windowtitle" --window-icon="${DIRECTORY}/icons/logo.png" \
-      --center --width=1000 --height=500 \
+      --maximized \
       $([ "$multiselect" == TRUE ] && echo '--column=:CHK' || echo '--column=:HD') --column=url:HD --column=tooltip:HD $([ ! -z "$thumbsize" ] && echo '--column=:IMG' || echo '--column=:HD') --column=title --print-column=2 --tooltip-column=3 --separator=' ' \
+      --button=URLs!"${DIRECTORY}/icons/link.png":4 \
       --button=Play!"${DIRECTORY}/icons/play.png":2 \
       --button=Download!"${DIRECTORY}/icons/download.png":0
       )"
     button=$?
     
     #go back to the starting page if play/download is not clicked
-    if [ $button != 0 ] && [ $button != 2 ];then
+    if [ $button != 0 ] && [ $button != 2 ] && [ $button != 4 ];then
       search=''
       kill $ytdlpid
       break #exit the search results while loop
@@ -291,20 +292,28 @@ End of results."
     
     #if at least 1 video selected 
     if [ ! -z "$output" ];then
-      playlist=()
-      
-      PREIFS="$IFS"
-      IFS=$'\n'
-      for video in $output ;do
-        playlist+=( "$video" )
-      done
-      IFS="$PREIFS"
-      
-      if [ $button == 2 ];then
+      genarray() {
+        playlist=()
+        
+        PREIFS="$IFS"
+        IFS=$'\n'
+        for video in $output ;do
+          playlist+=( "$video" )
+        done
+        IFS="$PREIFS"
+      }
+      if [ $button == 4 ];then
+        echo "$output" | grep . | yad --text-info \
+          --center --width=500 --height=250 --title='URLs to copy' \
+          --window-icon="${DIRECTORY}/icons/logo.png" \
+          --button=Close:0
+      elif [ $button == 2 ];then
         #play
-        $(cat "${DIRECTORY}/data/options/vlc-cmd") ${playlist[@]} $(cat "${DIRECTORY}/data/options/vlc-args") &
+        genarray
+        $(cat "${DIRECTORY}/data/options/vlc-cmd") ${playlist[*]} $(cat "${DIRECTORY}/data/options/vlc-args") &
       elif [ $button == 0 ];then
         #download
+        genarray
         numvideos=$(echo "$output" | tr ' ' '\n' | grep . | wc -l)
         if [ $numvideos == 1 ];then
           plural='video'
