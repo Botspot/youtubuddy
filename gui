@@ -8,6 +8,12 @@ function error {
 }
 
 check() {
+  #python
+  if ! command -v python &>/dev/null;then
+    echo "Installing python..."
+    sudo apt install -y python || error "Failed to install python!"
+  fi
+  
   #youtube-dl
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ];then
     echo "Installing youtube-dl..."
@@ -157,15 +163,22 @@ ${DIRECTORY}/data/options/vlc-args"
   
   if [[ "$search" == *'youtube.com/watch?v='* ]] || [[ "$search" == *youtu.be/* ]];then
     #url single-video mode
-    loadtext="Finding your URL..."
-    windowtitle="YouTubuddy: Video URL"
+    loadtext="Finding your YouTube URL..."
+    windowtitle="YouTubuddy: YouTube URL"
     #this searches for videos as a background process
     youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
     ytdlpid=$!
-  elif [[ "$search" == *'youtube.com/playlist?list='* ]] || [[ "$search" == *youtu.be/* ]];then
+  elif [[ "$search" == *'youtube.com/playlist?list='* ]];then
     #playlist-url mode
     loadtext="Finding your playlist..."
     windowtitle="YouTubuddy: Playlist"
+    #this searches for videos as a background process
+    youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
+    ytdlpid=$!
+  elif [[ "$search" == 'http'*'://'* ]];then
+    #playlist-url mode
+    loadtext="Finding your URL..."
+    windowtitle="YouTubuddy: Video URL"
     #this searches for videos as a background process
     youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
     ytdlpid=$!
