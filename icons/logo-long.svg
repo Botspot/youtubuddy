@@ -37,7 +37,7 @@
       <stop offset="0" style="stop-color: rgb(98, 255, 119);"/>
       <stop offset="1" style="stop-color: rgba(0, 128, 255, 0);"/>
     </linearGradient>
-    <radialGradient gradientUnits="userSpaceOnUse" cx="9491.256" cy="9612.756" r="350.669" id="gradient-7" gradientTransform="matrix(0.213871, 0.042089, -0.919742, 4.673737, 26828.310884, -42583.324859)">
+    <radialGradient gradientUnits="userSpaceOnUse" cx="9491.256" cy="9612.756" r="350.669" id="gradient-7" gradientTransform="matrix(-0.213908, -0.0419, 2.641212, -13.484368, -3342.106086, 132763.273016)">
       <stop offset="0" style="stop-color: rgb(0, 179, 255);"/>
       <stop offset="1" style="stop-color: rgb(255, 255, 255);"/>
     </radialGradient>
@@ -137,7 +137,7 @@
     </image>
   </g>
   <g transform="matrix(1, 0, 0, 1, 733.849731, 47.345142)" style="">
-    <g transform="matrix(0.982624, -0.185612, 0.185612, 0.982624, -683.973328, 1765.773438)">
+    <g transform="matrix(0.953041, -0.302852, 0.302852, 0.953041, -1073.754272, 3075.36377)">
       <g class="style-scope ytd-topbar-logo-renderer" transform="matrix(47.408737, 7.946162, -7.946162, 47.408737, 8392.374023, 4092.154785)" style="clip-path: url(#clip-3);">
         <title>play button</title>
         <path fill="#FF0000" d="M63,14.87c-0.72-2.7-2.85-4.83-5.56-5.56C52.54,8,32.88,8,32.88,8S13.23,8,8.32,9.31 c-2.7,0.72-4.83,2.85-5.56,5.56C1.45,19.77,1.45,30,1.45,30s0,10.23,1.31,15.13c0.72,2.7,2.85,4.83,5.56,5.56 C13.23,52,32.88,52,32.88,52s19.66,0,24.56-1.31c2.7-0.72,4.83-2.85,5.56-5.56C64.31,40.23,64.31,30,64.31,30 S64.31,19.77,63,14.87z" class="style-scope ytd-topbar-logo-renderer"/>
