@@ -14,15 +14,12 @@
   - Videos won't appear in your browsing history
 - Flexible
   - Add your own flags to VLC and youtube-dl. For example, make VLC repeat the playlist, or play in fullscreen
-  - Create your own playlist by selecting multiple videos
-  - Dedicated button to download videos
 - Awesome
-  - The only youtube browser to support:
-    - Playlists, direct links, and searches
-    - Video thumbnails and tooltips in search results
-    - Selecting multiple videos from a list
-    - Downloading multiple videos with a single click
-    - Playing all selected videos in VLC
+  - Supports playlists, direct links, and searches
+  - Displays video thumbnails and tooltips in search results
+  - Allows selecting multiple videos from a list
+  - Easily Download multiple videos with a single click
+  - Play all selected videos in VLC
 ## To download:
 ```
 git clone https://github.com/Botspot/youtubuddy
@@ -34,3 +31,9 @@ git clone https://github.com/Botspot/youtubuddy
 ```
 ## Updating:
 YouTubuddy will automatically keep itself updated with this main repo. To disable this feature, create a file at `~/youtubuddy/no-update`.
+
+## How it works:
+It turns out `youtube-dl` has [this little-known feature](https://github.com/Botspot/pi-apps/issues/116#issuecomment-743803001) that allows you to search YouTube.  
+As it searches, `youtube-dl` [creates a JSON file](https://github.com/Botspot/youtubuddy/blob/51ba7a6e360888fb49a32db2d93480e6ee31cb63/gui#L201) at `~/youtubuddy/data/lastjson`.
+Every new line in the file is another search result.  
+Most of the rest of the script is dedicated to reading that json file and displaying the search results in a YAD dialog window.
