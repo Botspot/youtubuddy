@@ -24,6 +24,16 @@ check() {
     fi
   fi
   
+  #VLC youtube.lua
+  if [ ! -f ~/.local/share/vlc/lua/playlist/youtube.lua ] || [ "$(sha256sum ~/.local/share/vlc/lua/playlist/youtube.lua | awk '{print $1}')" != "$(wget -qO- https://raw.githubusercontent.com/videolan/vlc/master/share/lua/playlist/youtube.lua | sha256sum | awk '{print $1}')" ];then
+    echo "Updating VLC youtube.lua..."
+    mkdir -p ~/.local/share/vlc/lua/playlist
+    wget https://raw.githubusercontent.com/videolan/vlc/master/share/lua/playlist/youtube.lua -O ~/.local/share/vlc/lua/playlist/youtube.lua
+    if [ ! -f ~/.local/share/vlc/lua/playlist/youtube.lua ] || [ "$(sha256sum ~/.local/share/vlc/lua/playlist/youtube.lua | awk '{print $1}')" != "$(wget -qO- https://raw.githubusercontent.com/videolan/vlc/master/share/lua/playlist/youtube.lua | sha256sum | awk '{print $1}')" ];then
+      error "VLC youtube.lua failed to be updated!"
+    fi
+  fi
+  
   #YAD
   if ! command -v yad &>/dev/null;then
     echo "Installing YAD..."
@@ -89,7 +99,7 @@ search="$1"
 #main while loop. If search results window is closed, this takes you back to the start.
 while true;do
   #searching while loop. It stays here until a search is made.
-  while [ -z "$search" ];do
+  while [ -z "$(echo "$search" | grep . | grep -v ' ')" ];do
     search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
       --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
