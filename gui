@@ -99,7 +99,7 @@ search="$1"
 #main while loop. If search results window is closed, this takes you back to the start.
 while true;do
   #searching while loop. It stays here until a search is made.
-  while [ -z "$(echo "$search" | grep . | grep -v ' ')" ];do
+  while [ -z "$(echo "$search" | tr -d ' ')" ];do
     search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
       --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
