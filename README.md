@@ -29,8 +29,7 @@ git clone https://github.com/Botspot/youtubuddy
 ```
 ~/youtubuddy/gui
 ```
->NOTE:<br>
->after running for the first time, menu and desktop shortcuts will be created.
+The first time you run it, YouTubuddy takes care of dependencies and adds a menu button.
 ## Updating:
 YouTubuddy will automatically keep itself updated with this main repo. To disable this feature, create a file at `~/youtubuddy/no-update`.
 
