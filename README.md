@@ -43,6 +43,8 @@ Most of the rest of the script is dedicated to reading that json file and displa
 
 # How to Change The Default Playback Quality?
 For changing the video quality, do the following steps:
+
+
 Open VLC:
 
 Go to tools>preferences
