@@ -45,10 +45,10 @@ Most of the rest of the script is dedicated to reading that json file and displa
 For changing the video quality, do the following steps:
 Open VLC:
 
-    Go to tools>preferences
+Go to tools>preferences
 
-    Enable "All" option in settings
+Enable "All" option in settings
 
-    In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.
+In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.
 
 Note: This option will also degrade the video quality for all video (local, streams etc).
