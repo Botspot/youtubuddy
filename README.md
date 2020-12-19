@@ -43,26 +43,16 @@ Most of the rest of the script is dedicated to reading that json file and displa
 
 
 # Optional Settings:
-# How To Change The Default Playback Quality?
-For changing the video quality, do the following steps:
-
-
-Open VLC:
-
-Go to tools>preferences
-
-Enable "All" option in settings
-
-In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.
-
+## To change video playback quality:
+Open VLC:  
+Go to tools > preferences  
+Enable "All" option in settings  
+In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.  
 Note: This option will also degrade the video quality for all video (local, streams etc).
 
-
-# How To Change Default Video Download Quality?
-To change the default download quality open youtubuddy>options>youtube-dl args
+## How To Change Default Video Download Quality?
+To change the default download quality open youtubuddy > options > youtube-dl args
 Here use the code according to the list below:
-
-
 
 ```
 code        format  quality
@@ -78,3 +68,4 @@ code        format  quality
 43          webm      640x360     
 18          mp4       640x360     
 22          mp4       1280x720 
+```
