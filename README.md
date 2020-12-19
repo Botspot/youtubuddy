@@ -38,3 +38,17 @@ It turns out `youtube-dl` has [this little-known feature](https://github.com/Bot
 As it searches, `youtube-dl` [creates a JSON file](https://github.com/Botspot/youtubuddy/blob/51ba7a6e360888fb49a32db2d93480e6ee31cb63/gui#L201) at `~/youtubuddy/data/lastjson`.
 Every new line in the file is another search result.  
 Most of the rest of the script is dedicated to reading that json file and displaying the search results in a YAD dialog window.
+
+
+
+# How to Change The Default Playback Quality?
+For changing the video quality, do the following steps:
+Open VLC:
+
+    Go to tools>preferences
+
+    Enable "All" option in settings
+
+    In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.
+
+Note: This option will also degrade the video quality for all video (local, streams etc).
