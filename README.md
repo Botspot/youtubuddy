@@ -38,3 +38,36 @@ It turns out `youtube-dl` has [this little-known feature](https://github.com/Bot
 As it searches, `youtube-dl` [creates a JSON file](https://github.com/Botspot/youtubuddy/blob/51ba7a6e360888fb49a32db2d93480e6ee31cb63/gui#L201) at `~/youtubuddy/data/lastjson`.
 Every new line in the file is another search result.  
 Most of the rest of the script is dedicated to reading that json file and displaying the search results in a YAD dialog window.
+
+
+
+
+# Optional Settings:
+## To change video playback quality:
+Open VLC:  
+Go to tools > preferences  
+Enable "All" option in settings  
+In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.  
+Note: This option will also degrade the video quality for all video (local, streams etc).
+
+## How To Change Default Video Download Quality?
+To change the default download quality open youtubuddy > options > youtube-dl args
+Here use the code according to the list below:
+
+```
+code        format  quality
+140         m4a       audio only
+160         mp4       144p       
+133         mp4       240p      
+134         mp4       360p      
+135         mp4       480p       
+136         mp4       720p   
+17          3gp       176x144     
+36          3gp       320x240     
+5           flv       400x240     
+43          webm      640x360     
+18          mp4       640x360     
+22          mp4       1280x720 
+```
+These codes change the quality at which the video gets downloaded. the syntax is `-f 135` here 135 is the code for mp4 format with video quality of 480p.
+Note: Don't use `youtube-dl -f 135` as this will result in a syntax error. Only use `-f`.
