@@ -41,7 +41,9 @@ Most of the rest of the script is dedicated to reading that json file and displa
 
 
 
-# How to Change The Default Playback Quality?
+
+# Optional Settings:
+# How To Change The Default Playback Quality?
 For changing the video quality, do the following steps:
 
 
@@ -54,3 +56,25 @@ Enable "All" option in settings
 In the left pane select "input/codecs" then on the right pane in "track settings" click preferred resolution option and select the video quality.
 
 Note: This option will also degrade the video quality for all video (local, streams etc).
+
+
+# How To Change Default Video Download Quality?
+To change the default download quality open youtubuddy>options>youtube-dl args
+Here use the code according to the list below:
+
+
+
+```
+code        format  quality
+140         m4a       audio only
+160         mp4       144p       
+133         mp4       240p      
+134         mp4       360p      
+135         mp4       480p       
+136         mp4       720p   
+17          3gp       176x144     
+36          3gp       320x240     
+5           flv       400x240     
+43          webm      640x360     
+18          mp4       640x360     
+22          mp4       1280x720 
