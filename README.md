@@ -69,5 +69,5 @@ code        format  quality
 18          mp4       640x360     
 22          mp4       1280x720 
 ```
-These codes change the quality at which the video gets downloaded. the syntax is `-f 135` here 135 is the code for mp4 format with video quality of 480p.
-Note: Don't use `youtube-dl -f 135` as this will result in a syntax error. Only use `-f`.
+These codes change the quality at which the video gets downloaded. the syntax is `-f 135+140` here `135` is the code for mp4 format with video quality of 480p and `140` is the code for audio. Since youtube uses seperate streams for audio and video, merging them is necessary. 
+Note: Don't use `youtube-dl -f 135+140` as this will result in a syntax error. Only use `-f`. 
