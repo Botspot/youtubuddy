@@ -77,17 +77,17 @@ if [ ! -f "${DIRECTORY}/no-update" ];then
   cd "$DIRECTORY"
   localhash="$(git rev-parse HEAD)"
   latesthash="$(git ls-remote https://github.com/Botspot/youtubuddy HEAD | awk '{print $1}')"
+  cd $HOME
   if [ "$localhash" != "$latesthash" ] && [ ! -z "$latesthash" ] && [ ! -z "$localhash" ];then
     echo "YouTubuddy is out of date. Downloading new version..."
     rm -rf "$DIRECTORY.old" &>/dev/null
     mv -f "$DIRECTORY" "$DIRECTORY.old"
     git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
     cp -af "$DIRECTORY.old/data"/. "$DIRECTORY/data"
-    gio trash "$DIRECTORY.old"
+    rm -rf "$DIRECTORY.old"
     bash -c "$0" &
     exit 0
   fi
-  cd $HOME
 fi
 
 #remove old thumbnails
@@ -99,7 +99,7 @@ search="$1"
 #main while loop. If search results window is closed, this takes you back to the start.
 while true;do
   #searching while loop. It stays here until a search is made.
-  while [ -z "$(echo "$search" | tr -d ' ')" ];do
+  while [ -z "$(echo "$search" | grep . | grep -v ' ')" ];do
     search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
       --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
