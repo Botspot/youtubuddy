@@ -68,6 +68,9 @@ StartupNotify=true" > ~/.local/share/applications/youtubuddy.desktop
 }
 if [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
   check
+elif [ "$1" == 'install' ];then
+  check
+  exit 0
 else
   check &
 fi
