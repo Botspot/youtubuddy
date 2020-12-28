@@ -66,11 +66,11 @@ Icon=${DIRECTORY}/icons/logo.png
 Categories=Network;WebBrowser;
 StartupNotify=true" > ~/.local/share/applications/youtubuddy.desktop
 }
-if [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
-  check
-elif [ "$1" == 'install' ];then
+if [ "$1" == 'install' ];then
   check
   exit 0
+elif [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
+  check
 else
   check &
 fi
