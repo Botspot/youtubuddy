@@ -99,7 +99,7 @@ search="$1"
 #main while loop. If search results window is closed, this takes you back to the start.
 while true;do
   #searching while loop. It stays here until a search is made.
-  while [ -z "$(echo "$search" | grep . | grep -v ' ')" ];do
+  while [ -z "$(echo "$search" | tr -d ' ')" ];do
     search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
       --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
@@ -243,7 +243,7 @@ ${DIRECTORY}/data/options/vlc-args"
     output="$(
     while true;do
       i=$((i+1))
-      if ps -p $ytdlpid > /dev/null || [ $i -le "$(wc -l "${DIRECTORY}/data/lastjson" | awk '{print $1}')" ]; then
+      if ps -p $ytdlpid > /dev/null || [ $i -le "$(cat "${DIRECTORY}/data/lastjson" | grep . | wc -l | awk '{print $1}')" ]; then
         result=''
         while [ -z "$result" ];do
           result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
@@ -262,7 +262,7 @@ ${DIRECTORY}/data/options/vlc-args"
           imageurl="$(echo "$result" | jq '.thumbnails' | jq ".[$thumbsize].url" | tr -d '"')"
           if [ ! -f "${DIRECTORY}/thumbnails/${id}.png" ];then
             image="${DIRECTORY}/thumbnails/${id}.webm"
-            wget "$imageurl" -O "$image"
+            wget "$imageurl" -qO "$image"
             mogrify -format png "$image"
             rm "$image"
           fi
