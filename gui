@@ -252,6 +252,8 @@ ${DIRECTORY}/data/options/vlc-args"
           result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
         done
         
+        echo "$result" 1>&2
+        
         result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
         
         id="$(echo "$result" | jq '.id' | head -n1 | tr -d '"')"
@@ -298,7 +300,7 @@ ${DIRECTORY}/icons/blank.png
 End of results."
         exit 0
       fi
-    done | tee /dev/stderr | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
+    done | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
       --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
       --title="$windowtitle" --window-icon="${DIRECTORY}/icons/logo.png" \
       --maximized \
@@ -336,7 +338,7 @@ End of results."
       elif [ $button == 2 ];then
         #play
         genarray
-        $(cat "${DIRECTORY}/data/options/vlc-cmd") ${playlist[*]} $(cat "${DIRECTORY}/data/options/vlc-args") &
+        $(cat "${DIRECTORY}/data/options/vlc-cmd") ${playlist[*]} $(cat "${DIRECTORY}/data/options/vlc-args")
       elif [ $button == 0 ];then
         #download
         genarray
