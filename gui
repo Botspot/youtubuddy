@@ -140,8 +140,8 @@ ${DIRECTORY}/data/options/vlc-args"
         --field='# of results:':NUM "$(cat "$(echo "$options" | sed -n 3p)")"!10..1000!10 \
         --field='Youtube-dl args:la' "​$(cat "$(echo "$options" | sed -n 4p)")" \
         --field='Videos saved to:':DIR "$(cat "$(echo "$options" | sed -n 5p)")" \
-        --field='VLC command:' "​$(cat "$(echo "$options" | sed -n 6p)")" \
-        --field='VLC args:' "​$(cat "$(echo "$options" | sed -n 7p)")" \
+        --field='Media player command:' "​$(cat "$(echo "$options" | sed -n 6p)")" \
+        --field='Media player args:' "​$(cat "$(echo "$options" | sed -n 7p)")" \
         --button=Done!"${DIRECTORY}/icons/check.png":0)"
       button=$?
       if [ $button == 0 ];then
