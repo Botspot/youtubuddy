@@ -126,8 +126,10 @@ while true;do
       options="${DIRECTORY}/data/options/thumbnail-size
 ${DIRECTORY}/data/options/multi-select
 ${DIRECTORY}/data/options/num-results
-${DIRECTORY}/data/options/ytdl-args
+${DIRECTORY}/data/options/maximized
+${DIRECTORY}/data/options/sort-by
 ${DIRECTORY}/data/options/dl-location
+${DIRECTORY}/data/options/ytdl-args
 ${DIRECTORY}/data/options/vlc-cmd
 ${DIRECTORY}/data/options/vlc-args"
       
@@ -138,10 +140,12 @@ ${DIRECTORY}/data/options/vlc-args"
         --field='Thumbnail size:':NUM "$(cat "$(echo "$options" | sed -n 1p)")"!0..5 \
         --field='Allow multiple videos to be selected':CHK "$(cat "$(echo "$options" | sed -n 2p)")" \
         --field='# of results:':NUM "$(cat "$(echo "$options" | sed -n 3p)")"!10..1000!10 \
-        --field='Youtube-dl args:la' "​$(cat "$(echo "$options" | sed -n 4p)")" \
-        --field='Videos saved to:':DIR "$(cat "$(echo "$options" | sed -n 5p)")" \
-        --field='VLC command:' "​$(cat "$(echo "$options" | sed -n 6p)")" \
-        --field='VLC args:' "​$(cat "$(echo "$options" | sed -n 7p)")" \
+        --field='Display search results in maximized window':CHK "$(cat "$(echo "$options" | sed -n 4p)")" \
+        --field='Search by:':CB "$(cat "$(echo "$options" | sed -n 5p)")!$(echo -e "Date\nRelevence" | grep -v $(cat "$(echo "$options" | sed -n 5p)"))" \
+        --field='Videos saved to:':DIR "$(cat "$(echo "$options" | sed -n 6p)")" \
+        --field='Youtube-dl args:' "​$(cat "$(echo "$options" | sed -n 7p)")" \
+        --field='VLC command:' "​$(cat "$(echo "$options" | sed -n 8p)")" \
+        --field='VLC args:' "​$(cat "$(echo "$options" | sed -n 9p)")" \
         --button=Done!"${DIRECTORY}/icons/check.png":0)"
       button=$?
       if [ $button == 0 ];then
@@ -200,8 +204,17 @@ ${DIRECTORY}/data/options/vlc-args"
     numresults=$(cat "${DIRECTORY}/data/options/num-results")
     loadtext="Searching for videos..."
     windowtitle="YouTubuddy: Results for "\""$search"\"""
+    
+    #determine search algorithm
+    if [ "$(cat ${DIRECTORY}/data/options/sort-by)" == 'Relevence' ];then
+      searchtype='ytsearch'
+    elif [ "$(cat ${DIRECTORY}/data/options/sort-by)" == 'Date' ];then
+      searchtype='ytsearchdate'
+    else
+      searchtype='ytsearch'
+    fi
     #this searches for videos as a background process
-    youtube-dl -s --print-json "ytsearch${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
+    youtube-dl -s --print-json "${searchtype}${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
     ytdlpid=$!
   fi
   
@@ -303,7 +316,7 @@ End of results."
     done | yad --list $([ "$multiselect" == TRUE ] && echo '--checklist') --text="Select some videos!" \
       --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
       --title="$windowtitle" --window-icon="${DIRECTORY}/icons/logo.png" \
-      --maximized \
+      $([ $(cat ${DIRECTORY}/data/options/maximized) == "FALSE" ] && echo '--center --height=300' || echo '--maximized') \
       $([ "$multiselect" == TRUE ] && echo '--column=:CHK' || echo '--column=:HD') --column=url:HD --column=tooltip:HD $([ ! -z "$thumbsize" ] && echo '--column=:IMG' || echo '--column=:HD') --column=title --print-column=2 --tooltip-column=3 --separator=' ' \
       --button=URLs!"${DIRECTORY}/icons/link.png":4 \
       --button=Play!"${DIRECTORY}/icons/play.png":2 \
@@ -314,7 +327,7 @@ End of results."
     #go back to the starting page if play/download is not clicked
     if [ $button != 0 ] && [ $button != 2 ] && [ $button != 4 ];then
       search=''
-      kill $ytdlpid
+      kill $ytdlpid 2>/dev/null
       break #exit the search results while loop
     fi
     
