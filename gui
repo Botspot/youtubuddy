@@ -407,7 +407,7 @@ End of results."
         fi
       elif [ $button == 6 ];then
         #watch later
-        echo "$output" > "$DIRECTORY/data/watchlist"
+        echo "$output" >> "$DIRECTORY/data/watchlist"
         format_watch_list
         search=''
         kill $ytdlpid 2>/dev/null
