@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 16 16" preserveAspectRatio="xMidYMid meet" focusable="false" class="style-scope yt-icon" style="pointer-events: none; display: block; width: 100%; height: 100%;" xmlns="http://www.w3.org/2000/svg" xmlns:bx="https://greentree.cf">
+  <g class="style-scope yt-icon" style="pointer-events: auto;" transform="matrix(1, 0, 0, 1, -4, -4)">
+    <path d="M 9 10 L 18 10 L 18 12 L 9 12 L 9 10 Z" class="style-scope yt-icon" style="fill: rgb(95, 99, 104);"/>
+    <path d="M 11.194 14 L 17.194 14 L 17.194 16 L 11.194 16 L 11.194 14 Z" class="style-scope yt-icon" style="fill: rgb(95, 99, 104);"/>
+    <path d="M 6 6 L 18 6 L 18 8 L 6 8 L 6 6 Z" class="style-scope yt-icon" style="fill: rgb(95, 99, 104);"/>
+    <path d="M 0.93 4.51 H 2.014 V 6.677 H 4.181 V 7.761 H 2.014 V 9.928 H 0.93 V 7.761 H -1.237 V 6.677 H 0.93 Z" style="fill: rgb(255, 0, 0);" transform="matrix(0.707072, 0.707142, -0.707142, 0.707072, 11.526638, 8.294678)" bx:shape="cross -1.237 4.51 5.418 5.418 1.084 1.084 0.5 1@1f712fd5"/>
+  </g>
+</svg>
