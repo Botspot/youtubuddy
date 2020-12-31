@@ -15,14 +15,16 @@ check() {
   fi
   
   #youtube-dl
-  if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ];then
+  if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
     echo "Installing youtube-dl..."
-    sudo wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl || error "Failed to download youtube-dl!"
-    sudo chmod a+rx /usr/local/bin/youtube-dl
+    sudo pip uninstall youtube_dl
+    sudo pip install youtube_dl
     if [ ! -f /usr/local/bin/youtube-dl ];then
       error "youtube-dl should be downloaded now, but /usr/local/bin/youtube-dl does not exist!"
     fi
   fi
+  
+  
   
   #VLC youtube.lua
   if [ ! -f ~/.local/share/vlc/lua/playlist/youtube.lua ] || [ "$(sha256sum ~/.local/share/vlc/lua/playlist/youtube.lua | awk '{print $1}')" != "$(wget -qO- https://raw.githubusercontent.com/videolan/vlc/master/share/lua/playlist/youtube.lua | sha256sum | awk '{print $1}')" ];then
@@ -93,6 +95,14 @@ if [ ! -f "${DIRECTORY}/no-update" ];then
   fi
 fi
 
+format_watch_list() {
+  if [ ! -f "${DIRECTORY}/data/watchlist" ];then
+    echo '' > "${DIRECTORY}/data/watchlist"
+  fi
+  echo "$(cat "${DIRECTORY}/data/watchlist" | tr -d ' ' | grep . | sort | uniq)" > "${DIRECTORY}/data/watchlist"
+}
+format_watch_list
+
 #remove old thumbnails
 find "${DIRECTORY}/thumbnails"/* -mtime +1 -exec rm {} \; &>/dev/null &
 
@@ -103,15 +113,20 @@ search="$1"
 while true;do
   #searching while loop. It stays here until a search is made.
   while [ -z "$(echo "$search" | tr -d ' ')" ];do
+    if [ ! -z "$(cat "${DIRECTORY}/data/watchlist")" ];then
+      watchlist="--button=Watchlist!${DIRECTORY}/icons/watchlist.png:4"
+    fi
     search="$(yad --image="${DIRECTORY}/icons/logo-long.png" --form --image-on-top \
       --title="YouTubuddy: Search" --window-icon="${DIRECTORY}/icons/logo.png" \
       --separator='\n' \
       --center --height=150 --width=400 \
       --field='Search YouTube:' "$(cat "${DIRECTORY}/data/lastsearch" 2>/dev/null)" \
       "$add" \
+      "$watchlist" \
       --button=Options!"${DIRECTORY}/icons/tool.png":2 \
       --button=!"${DIRECTORY}/icons/search.png":0)"
     button=$?
+    watchlist=no
     if [ $button == 0 ];then
       #search
       if [ -z "$search" ];then
@@ -119,6 +134,10 @@ while true;do
         search=''
         add="--field=Really? Come on. You have to search for something. ;):LBL"
       fi
+    elif [ $button == 4 ];then
+      #watchlist
+      search="$(cat "${DIRECTORY}/data/watchlist")"
+      watchlist=yes
     elif [ $button == 2 ];then
       search=''
       #options
@@ -170,34 +189,48 @@ ${DIRECTORY}/data/options/vlc-args"
       fi
     #end of settings code
     else
-      error "user exited"
+      error "user exited search window"
     fi
   done
   #end of searching while loop
   
-  echo "$search" > "${DIRECTORY}/data/lastsearch"
-  rm -f "${DIRECTORY}/data/lastjson"
-  
-  if [[ "$search" == *'youtube.com/watch?v='* ]] || [[ "$search" == *youtu.be/* ]];then
+  if [ "$watchlist" == 'no' ];then
+    echo "$search" > "${DIRECTORY}/data/lastsearch"
+  fi
+  rm -f "${DIRECTORY}/data/search.json" "${DIRECTORY}/data/lastjson"
+
+  if [ "$watchlist" == 'yes' ];then
+    #watchlist mode
+    loadtext="Loading your Watchlist..."
+    windowtitle="YouTubuddy: Watchlist"
+    #this searches for videos as a background process
+    PREIFS="$IFS"
+    IFS=$'\n'
+    for line in $search ;do
+      youtube-dl -s --print-json "$line" >> "${DIRECTORY}/data/search.json"
+    done &
+    ytdlpid=$!
+    IFS="$PREIFS"
+  elif [[ "$search" == *'youtube.com/watch?v='* ]] || [[ "$search" == *youtu.be/* ]];then
     #url single-video mode
     loadtext="Finding your YouTube URL..."
     windowtitle="YouTubuddy: YouTube URL"
     #this searches for videos as a background process
-    youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
+    youtube-dl -s --print-json "$search" >> "${DIRECTORY}/data/search.json" &
     ytdlpid=$!
   elif [[ "$search" == *'youtube.com/playlist?list='* ]];then
     #playlist-url mode
     loadtext="Finding your playlist..."
     windowtitle="YouTubuddy: Playlist"
     #this searches for videos as a background process
-    youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
+    youtube-dl -s --print-json "$search" >> "${DIRECTORY}/data/search.json" &
     ytdlpid=$!
   elif [[ "$search" == 'http'*'://'* ]];then
     #playlist-url mode
     loadtext="Finding your URL..."
     windowtitle="YouTubuddy: Video URL"
     #this searches for videos as a background process
-    youtube-dl --print-json "$search" >> "${DIRECTORY}/data/lastjson" &
+    youtube-dl -s --print-json "$search" >> "${DIRECTORY}/data/search.json" &
     ytdlpid=$!
   else
     #search mode
@@ -214,8 +247,10 @@ ${DIRECTORY}/data/options/vlc-args"
       searchtype='ytsearch'
     fi
     #this searches for videos as a background process
-    youtube-dl -s --print-json "${searchtype}${numresults}:${search}" >> "${DIRECTORY}/data/lastjson" &
+    echo 'search mode'
+    youtube-dl -s --print-json "${searchtype}${numresults}:${search}" >> "${DIRECTORY}/data/search.json" &
     ytdlpid=$!
+    echo "youtube-dl -s --print-json ${searchtype}${numresults}:${search} >> ${DIRECTORY}/data/search.json &"
   fi
   
   #kill youtube-dl background process on exit
@@ -225,8 +260,12 @@ ${DIRECTORY}/data/options/vlc-args"
   (echo "# "
   sleep 20
   echo "# This should not be taking so long."
-  sleep 20
-  echo "# Something is wrong."
+  
+  if ! ps -p $ytdlpid >/dev/null ;then
+    echo "# youtube-dl is not running!"
+  else
+    echo "# youtube-dl is running."
+  fi
   sleep infinity) | yad --progress --pulsate --title="YouTubuddy: Searching" \
     --image="${DIRECTORY}/icons/logo-short.png" --image-on-top \
     --text="$loadtext" --window-icon="${DIRECTORY}/icons/logo.png" \
@@ -235,8 +274,13 @@ ${DIRECTORY}/data/options/vlc-args"
   loader=$!
   
   #waits until the first result is inserted in the file
-  while [ -z "$(cat "${DIRECTORY}/data/lastjson")" ];do
+  while [ -z "$(cat "${DIRECTORY}/data/search.json")" ];do
     sleep 1
+    if ! ps -p $ytdlpid >/dev/null ;then
+      echo "youtube-dl is not running!"
+    else
+      echo "youtube-dl is running."
+    fi
   done
   
   kill $loader
@@ -259,13 +303,13 @@ ${DIRECTORY}/data/options/vlc-args"
     output="$(
     while true;do
       i=$((i+1))
-      if ps -p $ytdlpid > /dev/null || [ $i -le "$(cat "${DIRECTORY}/data/lastjson" | grep . | wc -l | awk '{print $1}')" ]; then
+      if ps -p $ytdlpid >/dev/null || [ $i -le "$(cat "${DIRECTORY}/data/search.json" | grep . | wc -l | awk '{print $1}')" ]; then
         result=''
         while [ -z "$result" ];do
-          result="$(cat "${DIRECTORY}/data/lastjson" 2>/dev/null | sed -n "${i}p")"
+          result="$(cat "${DIRECTORY}/data/search.json" 2>/dev/null | sed -n "${i}p")"
         done
         
-        echo "$result" 1>&2
+        #echo "$result" 1>&2
         
         result="$(echo "$result" | grep -E '"url":|height|upload_date|"webpage_url":|fulltitle|fps|"ext":|duration|like_count' )"
         
@@ -303,7 +347,7 @@ $urlnice - $channel on $date
 $image
 $title"
         
-        sleep 0.5
+        sleep 0.1
       else
         #if all results are in, stop the file-checking loop.
         echo "FALSE
@@ -317,7 +361,11 @@ End of results."
       --image="${DIRECTORY}/icons/logo-long.png" --image-on-top --no-headers --no-click \
       --title="$windowtitle" --window-icon="${DIRECTORY}/icons/logo.png" \
       $([ $(cat ${DIRECTORY}/data/options/maximized) == "FALSE" ] && echo '--center --height=300' || echo '--maximized') \
-      $([ "$multiselect" == TRUE ] && echo '--column=:CHK' || echo '--column=:HD') --column=url:HD --column=tooltip:HD $([ ! -z "$thumbsize" ] && echo '--column=:IMG' || echo '--column=:HD') --column=title --print-column=2 --tooltip-column=3 --separator=' ' \
+      $([ "$multiselect" == TRUE ] && echo '--column=:CHK' || echo '--column=:HD') \
+      --column=url:HD --column=tooltip:HD \
+      $([ ! -z "$thumbsize" ] && echo '--column=:IMG' || echo '--column=:HD') \
+      --column=title --print-column=2 --tooltip-column=3 --separator=' ' \
+      "$([ "$watchlist" == 'yes' ] && echo "--button=Remove!${DIRECTORY}/icons/rmwatchlist.png:8" || echo "--button=Watch later!${DIRECTORY}/icons/clock.png:6")" \
       --button=URLs!"${DIRECTORY}/icons/link.png":4 \
       --button=Play!"${DIRECTORY}/icons/play.png":2 \
       --button=Download!"${DIRECTORY}/icons/download.png":0
@@ -325,7 +373,7 @@ End of results."
     button=$?
     
     #go back to the starting page if play/download is not clicked
-    if [ $button != 0 ] && [ $button != 2 ] && [ $button != 4 ];then
+    if [ $button -gt 10 ] || [ $button == 1 ];then
       search=''
       kill $ytdlpid 2>/dev/null
       break #exit the search results while loop
@@ -343,7 +391,29 @@ End of results."
         done
         IFS="$PREIFS"
       }
-      if [ $button == 4 ];then
+      echo "Output: ${output}EOO"
+      if [ $button == 8 ];then
+        #remove from watch list
+        grepval="$(echo "$output" | tr -d ' ' | grep . | tr '\n' '|' | sed 's+https://www.youtube.com/watch?v=++g' | sed 's/.$//')"
+        echo "grepval: ${grepval}EOG"
+        echo "$(cat "$DIRECTORY/data/watchlist" | grep -vE "$grepval")" > "$DIRECTORY/data/watchlist"
+        echo "$(cat "$DIRECTORY/data/search.json" | grep -vE "$grepval")" > "$DIRECTORY/data/search.json"
+        format_watch_list
+        if [ -z "$(cat "$DIRECTORY/data/watchlist" )" ];then
+          search=''
+          kill $ytdlpid 2>/dev/null
+          break
+          #back to search window if no videos remaining in watch list
+        fi
+      elif [ $button == 6 ];then
+        #watch later
+        echo "$output" > "$DIRECTORY/data/watchlist"
+        format_watch_list
+        search=''
+        kill $ytdlpid 2>/dev/null
+        break
+      elif [ $button == 4 ];then
+        #URLs
         echo "$output" | grep . | yad --text-info \
           --center --width=500 --height=250 --title='URLs to copy' \
           --window-icon="${DIRECTORY}/icons/logo.png" \
@@ -365,9 +435,9 @@ End of results."
           cd $(cat "${DIRECTORY}/data/options/dl-location")
           youtube-dl ${playlist[*]} $(cat "${DIRECTORY}/data/options/ytdl-args")" "Downloading $numvideos $plural to $(cat "${DIRECTORY}/data/options/dl-location")..." &
       fi
+    else
+      echo "Warning: no videos selected!"
     fi
-    
-    
   done
   #end of search results while loop
 done
