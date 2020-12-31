@@ -35,12 +35,9 @@ YouTubuddy will automatically keep itself updated with this main repo. To disabl
 
 ## How it works:
 It turns out `youtube-dl` has [this little-known feature](https://github.com/Botspot/pi-apps/issues/116#issuecomment-743803001) that allows you to search YouTube.  
-As it searches, `youtube-dl` [creates a JSON file](https://github.com/Botspot/youtubuddy/blob/51ba7a6e360888fb49a32db2d93480e6ee31cb63/gui#L201) at `~/youtubuddy/data/lastjson`.
+As it searches, `youtube-dl` [creates a JSON file](https://github.com/Botspot/youtubuddy/blob/51ba7a6e360888fb49a32db2d93480e6ee31cb63/gui#L201) at `~/youtubuddy/data/search.json`.
 Every new line in the file is another search result.  
 Most of the rest of the script is dedicated to reading that json file and displaying the search results in a YAD dialog window.
-
-
-
 
 # Optional Settings:
 ## To change video playback quality:
