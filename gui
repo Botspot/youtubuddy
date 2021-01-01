@@ -409,9 +409,6 @@ End of results."
         #watch later
         echo "$output" >> "$DIRECTORY/data/watchlist"
         format_watch_list
-        search=''
-        kill $ytdlpid 2>/dev/null
-        break
       elif [ $button == 4 ];then
         #URLs
         echo "$output" | grep . | yad --text-info \
