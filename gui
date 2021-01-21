@@ -15,7 +15,7 @@ check() {
   fi
   
   #youtube-dl
-  if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
+  if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019')" ] || [ ! -z "$(youtube-dl -v 2>&1 | grep 'youtube-dl version 2021.01.08')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
     echo "Installing youtube-dl..."
     sudo pip uninstall youtube_dl
     sudo pip install youtube_dl
