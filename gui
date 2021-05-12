@@ -67,26 +67,26 @@ Icon=${DIRECTORY}/icons/logo.png
 Categories=Network;WebBrowser;
 StartupNotify=true" > ~/.local/share/applications/youtubuddy.desktop
 }
-#if [ "$1" == 'install' ];then
-#  check
-#  exit 0
-#elif [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
-#  check
-#else
-#  check &
-#fi
+if [ "$1" == 'install' ];then
+  check
+  exit 0
+elif [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
+  check
+else
+  check &
+fi
 
 #check for updates and auto-update if the no-update files does not exist
 if [ ! -f "${DIRECTORY}/no-update" ];then
   cd "$DIRECTORY"
   localhash="$(git rev-parse HEAD)"
-  latesthash="$(git ls-remote https://github.com/Botspot/youtubuddy HEAD | awk '{print $1}')"
+  latesthash="$(git ls-remote https://github.com/Itai-Nelken/youtubuddy-Arch HEAD | awk '{print $1}')"
   cd $HOME
   if [ "$localhash" != "$latesthash" ] && [ ! -z "$latesthash" ] && [ ! -z "$localhash" ];then
     echo "YouTubuddy is out of date. Downloading new version..."
     rm -rf "$DIRECTORY.old" &>/dev/null
     mv -f "$DIRECTORY" "$DIRECTORY.old"
-    git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
+    git clone "https://github.com/Itai-Nelken/youtubuddy-Arch" "$DIRECTORY"
     cp -af "$DIRECTORY.old/data"/. "$DIRECTORY/data"
     rm -rf "$DIRECTORY.old"
     bash -c "$0" &
