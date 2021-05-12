@@ -19,7 +19,7 @@ check() {
     echo "Installing youtube-dl..."
     sudo pip uninstall youtube_dl
     sudo pip install youtube_dl
-    if [ ! -f /usr/local/bin/youtube-dl ] || [ ! -f ~/.local/bin/youtube-dl ] || [ ! -f /bin/youtube-dl ];then
+    if ! command -v youtube-dl >/dev/null ;then
       error "youtube-dl should be installed now, but it isn't!"
     fi
   fi
