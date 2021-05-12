@@ -11,13 +11,14 @@ check() {
   #python
   if ! command -v python &>/dev/null;then
     echo "Installing python..."
-    sudo pacman -S --noconfirm python || error "Failed to install python!"
+    sudo apt install -y python || error "Failed to install python!"
   fi
   
   #youtube-dl
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019\|2020')" ] || [ ! -z "$(youtube-dl -v 2>&1 | grep 'youtube-dl version 2021.01.08')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
     echo "Installing youtube-dl..."
-    sudo pacman -S --noconfirm youtube-dl
+    sudo pip uninstall youtube_dl
+    sudo pip install youtube_dl
     if [ ! -f /usr/local/bin/youtube-dl ] || [ ! -f ~/.local/bin/youtube-dl ] || [ ! -f /bin/youtube-dl ];then
       error "youtube-dl should be installed now, but it isn't!"
     fi
@@ -38,18 +39,18 @@ check() {
   #YAD
   if ! command -v yad &>/dev/null;then
     echo "Installing YAD..."
-    sudo pacman -S --noconfirm yad || error "Failed to install yad!"
+    sudo apt install -y yad || error "Failed to install yad!"
   fi
   
   #jq
   if ! command -v jq &>/dev/null;then
     echo "Installing jq..."
-    sudo pacman -S --noconfirm jq || error "Failed to install jq!"
+    sudo apt install -y jq || error "Failed to install jq!"
   fi
   
   if ! command -v mogrify &>/dev/null;then
     echo "Installing imagemagick..."
-    sudo pacman -S --noconfirm imagemagick || error "Failed to install imagemagick!"
+    sudo apt install -y imagemagick || error "Failed to install imagemagick!"
   fi
   sudo rm /usr/share/applications/display-im6.q16.desktop &>/dev/null
   
@@ -80,13 +81,13 @@ fi
 if [ ! -f "${DIRECTORY}/no-update" ];then
   cd "$DIRECTORY"
   localhash="$(git rev-parse HEAD)"
-  latesthash="$(git ls-remote https://github.com/Itai-Nelken/youtubuddy-Arch HEAD | awk '{print $1}')"
+  latesthash="$(git ls-remote https://github.com/Botspot/youtubuddy HEAD | awk '{print $1}')"
   cd $HOME
   if [ "$localhash" != "$latesthash" ] && [ ! -z "$latesthash" ] && [ ! -z "$localhash" ];then
     echo "YouTubuddy is out of date. Downloading new version..."
     rm -rf "$DIRECTORY.old" &>/dev/null
     mv -f "$DIRECTORY" "$DIRECTORY.old"
-    git clone "https://github.com/Itai-Nelken/youtubuddy-Arch" "$DIRECTORY"
+    git clone "https://github.com/Botspot/youtubuddy" "$DIRECTORY"
     cp -af "$DIRECTORY.old/data"/. "$DIRECTORY/data"
     rm -rf "$DIRECTORY.old"
     bash -c "$0" &
