@@ -1,6 +1,8 @@
 # YouTubuddy
 ## Search/Watch/Download YouTube videos with a lightweight, interactive tool
 
+### NOTE: this is a fork of youtubuddy modified to work with Arch and derivatives. 
+
 ![2020-12-15-220913_1920x1080_scrot](https://user-images.githubusercontent.com/54716352/102304904-3d9cf080-3f24-11eb-9d66-a7e3a75b88fb.png)
 
 - Simple
@@ -22,7 +24,7 @@
   - Play all selected videos in VLC
 ## To download:
 ```
-git clone https://github.com/Botspot/youtubuddy
+git clone https://github.com/Itai-Nelken/youtubuddy-Arch ~/youtubuddy
 ```
 
 ## To run:
