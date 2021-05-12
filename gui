@@ -11,16 +11,15 @@ check() {
   #python
   if ! command -v python &>/dev/null;then
     echo "Installing python..."
-    sudo apt install -y python || error "Failed to install python!"
+    sudo pacman -S --noconfirm python || error "Failed to install python!"
   fi
   
   #youtube-dl
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019\|2020')" ] || [ ! -z "$(youtube-dl -v 2>&1 | grep 'youtube-dl version 2021.01.08')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
     echo "Installing youtube-dl..."
-    sudo pip uninstall youtube_dl
-    sudo pip install youtube_dl
-    if [ ! -f /usr/local/bin/youtube-dl ];then
-      error "youtube-dl should be downloaded now, but /usr/local/bin/youtube-dl does not exist!"
+    sudo pacman -S --noconfirm youtube-dl
+    if [ ! -f /usr/local/bin/youtube-dl ] || [ ! -f ~/.local/bin/youtube-dl ] || [ ! -f /bin/youtube-dl ];then
+      error "youtube-dl should be installed now, but it isn't!"
     fi
   fi
   
@@ -39,18 +38,18 @@ check() {
   #YAD
   if ! command -v yad &>/dev/null;then
     echo "Installing YAD..."
-    sudo apt install -y yad || error "Failed to install yad!"
+    sudo pacman -S --noconfirm yad || error "Failed to install yad!"
   fi
   
   #jq
   if ! command -v jq &>/dev/null;then
     echo "Installing jq..."
-    sudo apt install -y jq || error "Failed to install jq!"
+    sudo pacman -S --noconfirm jq || error "Failed to install jq!"
   fi
   
   if ! command -v mogrify &>/dev/null;then
     echo "Installing imagemagick..."
-    sudo apt install -y imagemagick || error "Failed to install imagemagick!"
+    sudo pacman -S --noconfirm imagemagick || error "Failed to install imagemagick!"
   fi
   sudo rm /usr/share/applications/display-im6.q16.desktop &>/dev/null
   
@@ -68,14 +67,14 @@ Icon=${DIRECTORY}/icons/logo.png
 Categories=Network;WebBrowser;
 StartupNotify=true" > ~/.local/share/applications/youtubuddy.desktop
 }
-if [ "$1" == 'install' ];then
-  check
-  exit 0
-elif [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
-  check
-else
-  check &
-fi
+#if [ "$1" == 'install' ];then
+#  check
+#  exit 0
+#elif [ ! -e "${DIRECTORY}/data" ] || [ ! -e ~/.local/share/applications/youtubuddy.desktop ];then
+#  check
+#else
+#  check &
+#fi
 
 #check for updates and auto-update if the no-update files does not exist
 if [ ! -f "${DIRECTORY}/no-update" ];then
