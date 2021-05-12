@@ -51,8 +51,9 @@ Note: This option will also degrade the video quality for all video (local, stre
 
 ## To change video download quality:
 To change the default download quality open youtubuddy > options > youtube-dl args, and insert something like `-f 135+140`.  
-The `135` sets the video quality, which in this case is 480p. The `140` is audio quality.  
-List of video quality codes:
+The `135` sets the video quality, which in this case is 480p. The `140` is audio quality.
+If you want to always download the best available resolution, use `-f best`
+**List of video quality codes:**
 ```
 code        format  quality
 140         m4a       audio only
