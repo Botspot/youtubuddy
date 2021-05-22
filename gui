@@ -24,7 +24,11 @@ check() {
     fi
   fi
   
-  
+  #vlc
+  if ! command -v vlc &>/dev/null;then
+    echo "Installing vlc..."
+    sudo apt install -y vlc || error "Failed to install vlc!"
+  fi
   
   #VLC youtube.lua
   if [ ! -f ~/.local/share/vlc/lua/playlist/youtube.lua ] || [ "$(sha256sum ~/.local/share/vlc/lua/playlist/youtube.lua | awk '{print $1}')" != "$(wget -qO- https://raw.githubusercontent.com/videolan/vlc/master/share/lua/playlist/youtube.lua | sha256sum | awk '{print $1}')" ];then
