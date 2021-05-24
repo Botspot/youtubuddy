@@ -52,14 +52,26 @@ check() {
     sudo apt install -y jq || error "Failed to install jq!"
   fi
   
+  #mogrify
   if ! command -v mogrify &>/dev/null;then
     echo "Installing imagemagick..."
     sudo apt install -y imagemagick || error "Failed to install imagemagick!"
   fi
   sudo rm /usr/share/applications/display-im6.q16.desktop &>/dev/null
   
-  mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data" ~/.local/share/applications
+  mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data"
   
+  #if username is different (not /home/pi), but dl-location contains /home/pi, delete the file to regenerate it in the subsequent 'if' statement
+  if [ -f "${DIRECTORY}/data/options/dl-location" ] && [ "$HOME" != '/home/pi' ] && cat "${DIRECTORY}/data/options/dl-location" | grep -q '/home/pi';then
+    rm -f "${DIRECTORY}/data/options/dl-location"
+  fi
+  
+  #regenerate dl-location to use the current home directory
+  if [ ! -f "${DIRECTORY}/data/options/dl-location" ];then
+    echo "$HOME/Downloads" > "${DIRECTORY}/data/options/dl-location"
+  fi
+  
+  mkdir -p ~/.local/share/applications
   echo "[Desktop Entry]
 Version=1.0
 Name=YouTubuddy
