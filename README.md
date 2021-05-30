@@ -1,6 +1,5 @@
 # YouTubuddy
 ## Search/Watch/Download YouTube videos with a lightweight, interactive tool
-
 ![2020-12-15-220913_1920x1080_scrot](https://user-images.githubusercontent.com/54716352/102304904-3d9cf080-3f24-11eb-9d66-a7e3a75b88fb.png)
 
 - Simple
@@ -22,7 +21,7 @@
   - Play all selected videos in VLC
 ## To download:
 ```
-git clone https://github.com/Botspot/youtubuddy
+git clone https://github.com/Itai-Nelken/youtubuddy-Arch ~/youtubuddy
 ```
 
 ## To run:
@@ -49,8 +48,9 @@ Note: This option will also degrade the video quality for all video (local, stre
 
 ## To change video download quality:
 To change the default download quality open youtubuddy > options > youtube-dl args, and insert something like `-f 135+140`.  
-The `135` sets the video quality, which in this case is 480p. The `140` is audio quality.  
-List of video quality codes:
+The `135` sets the video quality, which in this case is 480p. The `140` is audio quality.
+If you want to always download the best available resolution, use `-f best`
+**List of video quality codes:**
 ```
 code        format  quality
 140         m4a       audio only
