@@ -13,6 +13,10 @@ check() {
     echo "Installing python..."
     sudo apt install -y python || error "Failed to install python!"
   fi
+  if ! command -v pip &>/dev/null;then
+    echo "Installing pip..."
+    sudo apt install -y python-pip || error "Failed to install python-pip!"
+  fi
   
   #youtube-dl
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019\|2020')" ] || [ ! -z "$(youtube-dl -v 2>&1 | grep 'youtube-dl version 2021.01.08')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
