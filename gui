@@ -7,32 +7,54 @@ function error {
   exit 1
 }
 
+apt_lock_wait() { #Wait until other apt processes are finished before proceeding
+  echo -n "Waiting until APT locks are released... "
+  while sudo fuser /var/lib/dpkg/lock &>/dev/null ; do
+    sleep 0.5
+  done
+  while sudo fuser /var/lib/dpkg/lock-frontend &>/dev/null ; do
+    sleep 0.5
+  done
+  while sudo fuser /var/lib/apt/lists/lock &>/dev/null ; do
+    sleep 0.5
+  done
+  if [ -f /var/log/unattended-upgrades/unattended-upgrades.log ]; then
+    while sudo fuser /var/log/unattended-upgrades/unattended-upgrades.log &>/dev/null ; do
+      sleep 0.5
+    done
+  fi
+  echo "Done"
+}
+
 check() {
   #python
   if ! command -v python &>/dev/null;then
     echo "Installing python..."
+    apt_lock_wait
     sudo apt install -y python || error "Failed to install python!"
   fi
-  if ! command -v pip &>/dev/null;then
+  if ! command -v pip3 &>/dev/null;then
     echo "Installing pip..."
-    sudo apt install -y python-pip || error "Failed to install python-pip!"
+    apt_lock_wait
+    sudo apt install -y python3-pip || error "Failed to install python3-pip!"
   fi
   
   #youtube-dl
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019\|2020')" ] || [ ! -z "$(youtube-dl -v 2>&1 | grep 'youtube-dl version 2021.01.08')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
     echo "Installing youtube-dl..."
     
-    sudo rm -f /usr/bin/youtube-dl #in case youtube-dl is installed to /usr/bin, delete it so pip succeeds to uninstall youtube-dl below
-    sudo pip uninstall youtube_dl
-    sudo pip install youtube_dl
-    if [ ! -f /usr/local/bin/youtube-dl ];then
-      error "youtube-dl should be downloaded now, but /usr/local/bin/youtube-dl does not exist!"
+    sudo rm -f /usr/bin/youtube-dl #in case youtube-dl is installed to /usr/bin, delete it so pip3 succeeds to uninstall youtube-dl below
+    sudo pip3 uninstall youtube_dl
+    sudo pip3 install youtube_dl
+    if ! command -v youtube-dl >/dev/null;then
+      error "youtube-dl should be installed now by pip3, but youtube-dl command not found!"
     fi
   fi
   
   #vlc
   if ! command -v vlc &>/dev/null;then
     echo "Installing vlc..."
+    apt_lock_wait
     sudo apt install -y vlc || error "Failed to install vlc!"
   fi
   
@@ -49,21 +71,24 @@ check() {
   #YAD
   if ! command -v yad &>/dev/null;then
     echo "Installing YAD..."
+    apt_lock_wait
     sudo apt install -y yad || error "Failed to install yad!"
   fi
   
   #jq
   if ! command -v jq &>/dev/null;then
     echo "Installing jq..."
+    apt_lock_wait
     sudo apt install -y jq || error "Failed to install jq!"
   fi
   
   #mogrify
   if ! command -v mogrify &>/dev/null;then
     echo "Installing imagemagick..."
+    apt_lock_wait
     sudo apt install -y imagemagick || error "Failed to install imagemagick!"
   fi
-  sudo rm /usr/share/applications/display-im6.q16.desktop &>/dev/null
+  sudo rm -f /usr/share/applications/display-im6.q16.desktop &>/dev/null
   
   mkdir -p "${DIRECTORY}/thumbnails" "${DIRECTORY}/data"
   
