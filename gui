@@ -40,11 +40,13 @@ check() {
   fi
   
   #youtube-dl
+  if command -v youthbe-dl &>/dev/null;then
+    sudo pip3 uninstall youtube_dl
+  fi
   if ! command -v youtube-dl &>/dev/null || [ ! -z "$(youtube-dl -v 2>&1 | grep '2019\|2020')" ] || [ ! -z "$(youtube-dl -v 2>&1 | grep 'youtube-dl version 2021.01.08')" ] || [ "$(stat --printf="%s" $(command -v youtube-dl))" -ge 2000 ];then
     echo "Installing youtube-dl..."
     
     sudo rm -f /usr/bin/youtube-dl #in case youtube-dl is installed to /usr/bin, delete it so pip3 succeeds to uninstall youtube-dl below
-    sudo pip3 uninstall youtube_dl
     sudo pip3 install youtube_dl
     if ! command -v youtube-dl >/dev/null;then
       error "youtube-dl should be installed now by pip3, but youtube-dl command not found!"
