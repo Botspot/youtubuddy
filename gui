@@ -40,7 +40,7 @@ check() {
   fi
   
   #youtube-dl
-  if ! command -v youtube-dl >/dev/null || [ "$(date +%s -d "$(youtube-dl --version | tr '.' '/')")" -lt "$(date +%s -d "2021.12.17")" ];then
+  if ! command -v youtube-dl >/dev/null || [ "$(date +%s -d "$(youtube-dl --version | tr '.' '/')")" -lt "$(date +%s -d "2021/12/17")" ];then
     echo "Installing youtube-dl..."
     
     if dpkg -l youtube-dl &>/dev/null ;then
