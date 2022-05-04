@@ -28,13 +28,13 @@ apt_lock_wait() { #Wait until other apt processes are finished before proceeding
 
 check() {
   #python
-  if ! command -v python &>/dev/null;then
-    echo "Installing python..."
+  if ! command -v python3 &>/dev/null;then
+    echo "Installing python3..."
     apt_lock_wait
-    sudo apt install -y python || error "Failed to install python!"
+    sudo apt install -y python3 || error "Failed to install python3!"
   fi
   if ! command -v pip3 &>/dev/null;then
-    echo "Installing pip..."
+    echo "Installing pip3..."
     apt_lock_wait
     sudo apt install -y python3-pip || error "Failed to install python3-pip!"
   fi
