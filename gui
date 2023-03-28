@@ -40,7 +40,7 @@ check() {
   fi
   
   #youtube-dl
-  if ! command -v youtube-dl >/dev/null || [ "$(date +%s -d "$(youtube-dl --version | tr '.' '/')")" -lt "$(date +%s -d "2021/12/17")" ];then
+  if ! command -v youtube-dl >/dev/null || [ "$(date +%s -d "$(youtube-dl --version | tr '.' '/')")" -lt "$(date +%s -d "2023/03/04")" ];then
     echo "Installing youtube-dl..."
     
     if dpkg -l youtube-dl &>/dev/null ;then
@@ -49,11 +49,19 @@ check() {
     
     sudo rm -f /usr/bin/youtube-dl #in case youtube-dl is installed to /usr/bin, delete it so pip3 succeeds to uninstall youtube-dl below
     sudo pip3 uninstall -y youtube_dl
-    command -v pip && sudo pip uninstall -y youtube_dl
-    sudo pip3 install youtube_dl
-    if [ -z "$(youtube-dl 2>&1)" ];then
-      error "youtube-dl should be installed now by pip3, but youtube-dl command not found!"
+    command -v pip >/dev/null && sudo pip uninstall -y youtube_dl
+    
+    #overwrite youtube-dl with yt-dlp because it is better maintained
+    #don't uninstall youtube_dl since other apps may depend on it
+    sudo pip3 install --upgrade yt-dlp
+    if [ -z "$(yt-dlp 2>&1)" ];then
+      error "yt-dlp should be installed now by pip3, but yt-dlp command not found!"
     fi
+    sudo rm -f /usr/local/bin/youtube-dl
+    sudo ln -s /usr/local/bin/yt-dlp /usr/local/bin/youtube-dl
+  else
+    #yt-dlp is newer than 2023/03/04, but still update it on every youtubuddy launch
+    sudo pip3 install --upgrade yt-dlp &
   fi
   
   #vlc
