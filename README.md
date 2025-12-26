@@ -1,3 +1,9 @@
+# DEPRECATED
+YouTubuddy relied on VLC's youtube-decoding script to function, which has since been [deleted](https://github.com/videolan/vlc/commit/cd94dcaec9493735ddf711a069af99870a15e8f9) due to frequent issues in youtube constantly changing its decoding algorithm.  
+This would be fixable with some changes to make yt-dlp extract the video and audio URLS, and send them to vlc with flags, but a very similar open-source app already exists which does this better: [GTK+ Pipe Viewer](https://github.com/trizen/pipe-viewer)  
+Except for being minimal, GTK+ Pipe Viewer does everything YouTubuddy did, and much more. For that reason, I've decided to deprecate YouTubuddy, rather than make the needed fixes. This repo is now archived, and I recommend all users install **YouTube Player** (a re-skin of GTK+ Pipe Viewer) from the Pi-Apps store. Step-by-step instructions here: https://pi-apps.io/install-app/install-youtube-player-on-raspberry-pi/
+[![badge](https://github.com/Botspot/pi-apps/blob/master/icons/badge.png?raw=true)](https://github.com/Botspot/pi-apps)  
+
 # YouTubuddy
 ## Search/Watch/Download YouTube videos with a lightweight, interactive tool
 
